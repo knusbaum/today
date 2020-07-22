@@ -102,12 +102,7 @@ func writeToday(t *today, w io.Writer) error {
 		wtr = bufio.NewWriter(w)
 	}
 
-	//	_, err := wtr.WriteString(header)
-	//	if err != nil {
-	//		return err
-	//	}
-
-	_, err := wtr.WriteString(StartupLine + "\n")
+	_, err := wtr.WriteString(startupLine + "\n")
 	if err != nil {
 		return err
 	}
@@ -118,7 +113,7 @@ func writeToday(t *today, w io.Writer) error {
 		}
 	}
 
-	_, err = wtr.WriteString("\n" + NotesLine + "\n")
+	_, err = wtr.WriteString("\n" + notesLine + "\n")
 	if err != nil {
 		return err
 	}
@@ -129,7 +124,7 @@ func writeToday(t *today, w io.Writer) error {
 		}
 	}
 
-	_, err = wtr.WriteString("\n" + LogLine + "\n")
+	_, err = wtr.WriteString("\n" + logLine + "\n")
 	if err != nil {
 		return err
 	}
@@ -140,7 +135,7 @@ func writeToday(t *today, w io.Writer) error {
 		}
 	}
 
-	_, err = wtr.WriteString("\n" + TODOLine + "\n")
+	_, err = wtr.WriteString("\n" + todoLine + "\n")
 	if err != nil {
 		return err
 	}

@@ -15,11 +15,11 @@ func TestParseMorning(t *testing.T) {
 
 
 
-3. Read the inbox [DONE - something - Jan 5, 2020]
+Read the inbox [DONE - something - Jan 5, 2020]
 
 
 
-4. look at JIRAPROJECT 
+look at JIRAPROJECT 
 
 
 Notes:
@@ -41,12 +41,16 @@ TODO:
 		return
 	}
 	assert.Len(t, today.startup, 4)
+	assert.Equal(t, 1, today.startup[0].number)
 	assert.Equal(t, "Catch up on slack", today.startup[0].description)
+	assert.Equal(t, 2, today.startup[1].number)
 	assert.Equal(t, "Check the calendar", today.startup[1].description)
+	assert.Equal(t, 0, today.startup[2].number)
 	assert.Equal(t, "Read the inbox", today.startup[2].description)
 	assert.Equal(t, "DONE", today.startup[2].status.name)
 	assert.Equal(t, "something", today.startup[2].status.comment)
 	assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), today.startup[2].status.date)
+	assert.Equal(t, 0, today.startup[3].number)
 	assert.Equal(t, "look at JIRAPROJECT", today.startup[3].description)
 }
 

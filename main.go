@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,6 +14,8 @@ import (
 const (
 	noteFormat = "note.2006.Jan.02.txt"
 )
+
+var errNoTodayFiles error = fmt.Errorf("no existing today files")
 
 // copyFileContents copies the contents of the file named src to the file named
 // by dst. The file will be created if it does not already exist. If the
@@ -57,11 +60,11 @@ type fileDate struct {
 	date time.Time
 }
 
-type ByDate []fileDate
+type byDate []fileDate
 
-func (a ByDate) Len() int           { return len(a) }
-func (a ByDate) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByDate) Less(i, j int) bool { return a[i].date.After(a[j].date) }
+func (a byDate) Len() int           { return len(a) }
+func (a byDate) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byDate) Less(i, j int) bool { return a[i].date.After(a[j].date) }
 
 func openMostRecent(dir string) (*os.File, error) {
 	d, err := os.Open(dir)
@@ -72,6 +75,9 @@ func openMostRecent(dir string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(files) == 0 {
+		return nil, errNoTodayFiles
+	}
 
 	filedates := make([]fileDate, 0, len(files))
 	for i := range files {
@@ -81,7 +87,7 @@ func openMostRecent(dir string) (*os.File, error) {
 		}
 	}
 
-	sort.Sort(ByDate(filedates))
+	sort.Sort(byDate(filedates))
 
 	f, err := os.Open(path.Join(dir, filedates[0].name))
 	if err != nil {
@@ -102,8 +108,17 @@ func openWriteToday(dir string) (*os.File, error) {
 }
 
 func generateToday(dir string) error {
+
 	f, err := openMostRecent(dir)
 	if err != nil {
+		if err == errNoTodayFiles {
+			out, err := openWriteToday(dir)
+			if err != nil {
+				return err
+			}
+			defer out.Close()
+			return writeToday(&today{}, out)
+		}
 		return err
 	}
 	defer f.Close()

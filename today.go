@@ -42,9 +42,8 @@ func (t *today) updateStartup() {
 	}
 }
 
-func (t *today) Update() {
-	t.updateStartup()
-
+// updateTodos adds dates and statuses to any todos without them.
+func (t *today) updateTodos() {
 	for _, todo := range t.todos {
 		if todo.jira == "" {
 			todo.jira = fmt.Sprintf("TODO-%d", t.nextTodo)
@@ -53,10 +52,12 @@ func (t *today) Update() {
 		if todo.status.date.IsZero() {
 			todo.status.date = time.Now()
 			timestr := time.Now().Format("3:04")
-			if todo.status.comment != "" {
-				t.log = append(t.log, fmt.Sprintf("%s - Moved %s (%s) to %s (%s)", timestr, todo.jira, todo.description, todo.status.name, todo.status.comment))
-			} else {
-				t.log = append(t.log, fmt.Sprintf("%s - Moved %s (%s) to  %s", timestr, todo.jira, todo.description, todo.status.name))
+			if !todo.status.isUnknown() {
+				if todo.status.comment != "" {
+					t.log = append(t.log, fmt.Sprintf("%s - Moved %s (%s) to %s (%s)", timestr, todo.jira, todo.description, todo.status.name, todo.status.comment))
+				} else {
+					t.log = append(t.log, fmt.Sprintf("%s - Moved %s (%s) to  %s", timestr, todo.jira, todo.description, todo.status.name))
+				}
 			}
 		}
 		if todo.status.name == "" {
@@ -65,7 +66,10 @@ func (t *today) Update() {
 	}
 }
 
-type Priority []*todo
+func (t *today) Update() {
+	t.updateStartup()
+	t.updateTodos()
+}
 
 var priorityOrder map[string]int = map[string]int{
 	"":            0,
@@ -81,6 +85,10 @@ var priorityOrder map[string]int = map[string]int{
 	"STALE":       6,
 	"HOLD":        7,
 	"DONE":        8,
+}
+
+func (s *status) isUnknown() bool {
+	return s.name == "" || s.name == "?"
 }
 
 func priority(s *status) int {
@@ -107,29 +115,29 @@ func priority(s *status) int {
 	return v
 }
 
-func (a Priority) Len() int      { return len(a) }
-func (a Priority) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a Priority) Less(i, j int) bool {
+type byPriority []*todo
+
+func (a byPriority) Len() int      { return len(a) }
+func (a byPriority) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byPriority) Less(i, j int) bool {
 	pi := priority(&a[i].status)
 	pj := priority(&a[j].status)
 	if pi == pj {
 		return a[i].status.date.Before(a[j].status.date)
-	} else {
-		return pi < pj
 	}
+	return pi < pj
 }
 
 func (t *today) Sort() {
 	if len(t.todos) == 0 {
 		return
 	}
-	sort.Stable(Priority(t.todos))
+	sort.Stable(byPriority(t.todos))
 }
 
-// TODO: Test Clear function
 func (t *today) Clear() {
 	k := 0
-	for i := 0; i < (len(t.todos) - 1); {
+	for i := 0; i < len(t.todos); {
 		if t.todos[i].status.name != "DONE" {
 			t.todos[k] = t.todos[i]
 			k++
@@ -137,6 +145,8 @@ func (t *today) Clear() {
 		i++
 	}
 	t.todos = t.todos[:k]
+
+	// Eliminate status from startup items
 	for _, item := range t.startup {
 		item.status = status{}
 	}

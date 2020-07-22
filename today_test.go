@@ -1,13 +1,52 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestClear(t *testing.T) {
+	t.Run("done", func(t *testing.T) {
+		now := time.Now()
+		today := &today{
+			todos: []*todo{
+				&todo{description: "should not exist", status: status{name: "DONE", date: now}},
+				&todo{description: "task 0", status: status{name: "?", date: now}},
+				&todo{description: "task 1", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
+				&todo{description: "task 2", status: status{name: "IN PROGRESS", date: now}},
+				&todo{description: "should not exist", status: status{name: "DONE", date: now}},
+			},
+		}
+		today.Clear()
+		assert.Len(t, today.todos, 3)
+		for i := 0; i < len(today.todos); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		}
+	})
+	t.Run("same", func(t *testing.T) {
+		now := time.Now()
+		today := &today{
+			todos: []*todo{
+				&todo{description: "task 0", status: status{name: "", date: now}},
+				&todo{description: "task 1", status: status{name: "?", date: now}},
+				&todo{description: "task 2", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
+				&todo{description: "task 3", status: status{name: "IN PROGRESS", date: now}},
+				&todo{description: "task 4", status: status{name: "STALE", date: now}},
+			},
+		}
+		today.Clear()
+		assert.Len(t, today.todos, 5)
+		for i := 0; i < len(today.todos); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		}
+	})
+}
 
 func TestSortTodos(t *testing.T) {
 	t.Run("priority", func(t *testing.T) {
@@ -175,4 +214,68 @@ func TestUpdateList(t *testing.T) {
 			assert.Equal(t, fmt.Sprintf("item %d", i), today.startup[i].description)
 		}
 	})
+}
+
+func TestTransformation(t *testing.T) {
+	todayText := `Morning Start Up:
+
+Do something
+
+Do another thing
+
+One more thing.
+
+Notes:
+
+Some note
+
+Another Note
+
+One More Note
+
+Log:
+
+TODO:
+Some Task
+Another Task [IN PROGRESS]
+
+
+
+Something else
+`
+
+	r := strings.NewReader(todayText)
+	p := NewParser(r)
+	td, err := p.parseToday()
+	if !assert.NoError(t, err) {
+		return
+	}
+	td.Update()
+	td.Sort()
+	var b strings.Builder
+	w := bufio.NewWriter(&b)
+	writeToday(td, w)
+	result := b.String()
+
+	expected := `Morning Start Up:
+1. Do something 
+2. Do another thing 
+3. One more thing. 
+
+Notes:
+Some note
+Another Note
+One More Note
+
+Log:
+[0-9]+:[0-9]{2} - Moved TODO-1 \(Another Task\) to  IN PROGRESS
+
+TODO:
+TODO-0 - Some Task \[\? - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
+TODO-2 - Something else \[\? - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
+TODO-1 - Another Task \[IN PROGRESS - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
+`
+
+	assert.Regexp(t, expected, result)
+
 }

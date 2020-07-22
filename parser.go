@@ -11,22 +11,22 @@ import (
 	"time"
 )
 
-type parser struct {
+// Parser parses a today file
+type Parser struct {
 	rdr   *bufio.Reader
 	peekp bool
 	peek  string
 }
 
 const (
-	StartupLine = "Morning Start Up:"
-	NotesLine   = "Notes:"
-	LogLine     = "Log:"
-	TODOLine    = "TODO:"
+	startupLine = "Morning Start Up:"
+	notesLine   = "Notes:"
+	logLine     = "Log:"
+	todoLine    = "TODO:"
 )
 
-func (p *parser) PeekLine() (string, error) {
+func (p *Parser) peekLine() (string, error) {
 	if p.peekp {
-		//log.Printf("PEEK LINE1: [%s]", p.peek)
 		return p.peek, nil
 	}
 	peek, err := p.rdr.ReadString('\n')
@@ -35,27 +35,24 @@ func (p *parser) PeekLine() (string, error) {
 	}
 	p.peek = peek
 	p.peekp = true
-	//log.Printf("PEEK LINE2: [%s]", p.peek)
 	return p.peek, err
 }
 
-func (p *parser) NextLine() (string, error) {
+func (p *Parser) nextLine() (string, error) {
 	if p.peekp {
 		r := p.peek
 		p.peek = ""
 		p.peekp = false
-		//log.Printf("NEXT LINE1: [%s]", r)
 		return r, nil
 	}
 	str, err := p.rdr.ReadString('\n')
 	if strings.HasSuffix(str, "\n") {
 		str = str[0 : len(str)-1]
 	}
-	//log.Printf("NEXT LINE2: [%s]", str)
 	return str, err
 }
 
-func (p *parser) UngetLine(l string) {
+func (p *Parser) ungetLine(l string) {
 	if p.peekp {
 		panic("Cannot unget more than one line.")
 	}
@@ -65,7 +62,6 @@ func (p *parser) UngetLine(l string) {
 
 func matchLine(line, match string) bool {
 	ret := strings.HasPrefix(strings.TrimSpace(line), match)
-	//log.Printf("[matchLine] [%s] == [%s] -> %t", strings.TrimSpace(line), match, ret)
 	return ret
 }
 
@@ -105,10 +101,9 @@ func parseStatus(s string) status {
 	}
 }
 
-func (p *parser) parseTodo() *todo {
+func (p *Parser) parseTodo() *todo {
 	var t todo
-	//log.Printf("[parseTodo] next")
-	l, err := p.NextLine()
+	l, err := p.nextLine()
 	if err != nil {
 		log.Printf("Warning: Unexpected error while parsing todo: %s\n", err)
 		return nil
@@ -120,36 +115,25 @@ func (p *parser) parseTodo() *todo {
 
 	re := regexp.MustCompile(`^(([A-Z]+-[0-9]+)[[:space:]]+-)?(.*?)(\[([^][]*)\])?$`)
 	matches := re.FindStringSubmatch(l)
-
-	jira := strings.TrimSpace(matches[2])
-	description := strings.TrimSpace(matches[3])
-	status := parseStatus(strings.TrimSpace(matches[5]))
-
-	//log.Printf("JIRA: %s", jira)
-	//log.Printf("DESCR: %s", description)
-	//log.Printf("Status: %#v", status)
-
-	t.jira = jira
-	t.description = description
-	t.status = status
-	//log.Printf("[parseTodo] reading comments")
-	//defer log.Printf("[parseTodo] done")
-	for l, err := p.NextLine(); err == nil; l, err = p.NextLine() {
+	t.jira = strings.TrimSpace(matches[2])
+	t.description = strings.TrimSpace(matches[3])
+	t.status = parseStatus(strings.TrimSpace(matches[5]))
+	for l, err := p.nextLine(); err == nil; l, err = p.nextLine() {
 		if strings.HasPrefix(l, "\t") {
 			t.comments = append(t.comments, strings.TrimSpace(l))
 		} else if strings.TrimSpace(l) == "" {
 			t.blankBelow = true
 			continue
 		} else {
-			p.UngetLine(l)
+			p.ungetLine(l)
 			return &t
 		}
 	}
 	return &t
 }
 
-func (p *parser) parseListItem() *listItem {
-	l, err := p.NextLine()
+func (p *Parser) parseListItem() *listItem {
+	l, err := p.nextLine()
 	if err != nil {
 		log.Printf("Warning: Unexpected error while parsing todo: %s\n", err)
 		return nil
@@ -161,9 +145,12 @@ func (p *parser) parseListItem() *listItem {
 	re := regexp.MustCompile(`^(([0-9]+)\.)?[[:space:]]*(.*?)(\[([^][]*)\])?$`)
 	matches := re.FindStringSubmatch(l)
 
-	itemNumber, err := strconv.Atoi(matches[2])
-	if err != nil {
-		panic(err) // TODO: Probably don't want to panic.
+	var itemNumber int
+	if matches[2] != "" {
+		itemNumber, err = strconv.Atoi(matches[2])
+		if err != nil {
+			log.Printf("Failed to parse list item number: %s", err)
+		}
 	}
 	comment := strings.TrimSpace(matches[3])
 	status := parseStatus(strings.TrimSpace(matches[5]))
@@ -171,128 +158,110 @@ func (p *parser) parseListItem() *listItem {
 	return &listItem{number: itemNumber, description: comment, status: status}
 }
 
-func (p *parser) parseList(nextSection string) []*listItem {
+func (p *Parser) parseList(nextSection string) []*listItem {
 	var items []*listItem
 	for {
-		//log.Printf("[parseTodos] PEEKING for next section")
-		l, err := p.PeekLine()
+		l, err := p.peekLine()
 		if err != nil || matchLine(l, nextSection) {
-			//log.Printf("[parseTodos] found next section %s", nextSection)
 			return items
 		}
-		//log.Printf("[parseTodos] parsing todo.")
 		if item := p.parseListItem(); item != nil {
 			items = append(items, item)
 		}
-		//log.Printf("[parseTodos] done parsing todo.")
 	}
 }
 
-func (p *parser) parseTodos(nextSection string) []*todo {
+func (p *Parser) parseTodos(nextSection string) []*todo {
 	var todos []*todo
 	for {
-		//log.Printf("[parseTodos] PEEKING for next section")
-		l, err := p.PeekLine()
+		l, err := p.peekLine()
 		if err != nil || matchLine(l, nextSection) {
-			//log.Printf("[parseTodos] found next section %s", nextSection)
 			if len(todos) > 0 {
 				todos[len(todos)-1].blankBelow = false // last todo never gets blank line.
 			}
 			return todos
 		}
-		//log.Printf("[parseTodos] parsing todo.")
 		if t := p.parseTodo(); t != nil {
 			todos = append(todos, t)
 		}
-		//log.Printf("[parseTodos] done parsing todo.")
 	}
 }
 
-func (p *parser) parseLines(nextSection string) []string {
+func (p *Parser) parseLines(nextSection string) []string {
 	var lines []string
 	for {
-		l, err := p.PeekLine()
+		l, err := p.peekLine()
 		if err != nil || matchLine(l, nextSection) {
-			//log.Printf("[parseLines] found next section %s", nextSection)
 			return lines
 		}
-		p.NextLine()
+		p.nextLine()
 		if strings.TrimSpace(l) != "" {
-			// Trim off the newline.
 			lines = append(lines, l)
 		}
 	}
 }
 
-func (p *parser) parseStartup() ([]*listItem, error) {
+func (p *Parser) parseStartup() ([]*listItem, error) {
 	for {
-		l, err := p.NextLine()
+		l, err := p.nextLine()
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("[parseStartup] looking for section %s", StartupLine)
-		if matchLine(l, StartupLine) {
-			//log.Printf("[parseStartup] found section %s. parsing todos.", StartupLine)
-			l := p.parseList(NotesLine)
-			//log.Printf("[parseStartup] todos: %#v", todos)
+		if matchLine(l, startupLine) {
+			l := p.parseList(notesLine)
 			return l, nil
 		}
 	}
 }
 
-func (p *parser) parseNotes() ([]string, error) {
+func (p *Parser) parseNotes() ([]string, error) {
 	for {
-		l, err := p.NextLine()
+		l, err := p.nextLine()
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("[parseNotes] looking for section %s", NotesLine)
-		if matchLine(l, NotesLine) {
-			//log.Printf("[parseNotes] found section %s. parsing lines.", NotesLine)
-			return p.parseLines(LogLine), nil
+		if matchLine(l, notesLine) {
+			return p.parseLines(logLine), nil
 		}
 	}
 }
 
-func (p *parser) parseLog() ([]string, error) {
+func (p *Parser) parseLog() ([]string, error) {
 	for {
-		l, err := p.NextLine()
+		l, err := p.nextLine()
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("[parseLog] looking for section %s", LogLine)
-		if matchLine(l, LogLine) {
-			//log.Printf("[parseLog] found section %s. parsing lines.", LogLine)
-			return p.parseLines(TODOLine), nil
+		if matchLine(l, logLine) {
+			return p.parseLines(todoLine), nil
 		}
 	}
 }
 
-func (p *parser) parseTODO() ([]*todo, error) {
+func (p *Parser) parseTODO() ([]*todo, error) {
 	for {
-		l, err := p.NextLine()
+		l, err := p.nextLine()
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("[parseNotes] looking for section %s", TODOLine)
-		if matchLine(l, TODOLine) {
-			//log.Printf("[parseTODO] found section %s. parsing todos.", TODOLine)
+		if matchLine(l, todoLine) {
 			return p.parseTodos("END"), nil
 		}
 	}
 }
 
-func NewParser(r io.Reader) *parser {
+// NewParser will create a new
+func NewParser(r io.Reader) *Parser {
 	var rdr *bufio.Reader
 	if br, ok := r.(*bufio.Reader); ok {
 		rdr = br
 	} else {
 		rdr = bufio.NewReader(r)
 	}
-	return &parser{rdr: rdr}
+	return &Parser{rdr: rdr}
 }
 
-func (p *parser) parseToday() (*today, error) {
+func (p *Parser) parseToday() (*today, error) {
 	var t today
 
 	startup, err := p.parseStartup()
