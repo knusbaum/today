@@ -1,0 +1,83 @@
+version: v1.0
+name: Test 1.12
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Test 1.12
+    task:
+      jobs:
+        - name: go test
+          commands:
+            - sem-version go 1.14
+            - export GO111MODULE=on
+            - export GOPATH=~/go
+            - 'export PATH=/home/semaphore/go/bin:$PATH'
+            - checkout
+            - go get ./...
+            - go test -v ./...
+            - go build -v .
+      prologue:
+        commands:
+          - cache restore
+      epilogue:
+        always:
+          commands:
+            - cache store
+    dependencies:
+      - Code Check
+  - name: Code Check
+    dependencies: []
+    task:
+      jobs:
+        - name: go lint
+          commands:
+            - sem-version go 1.12
+            - export GO111MODULE=on
+            - export GOPATH=~/go
+            - 'export PATH=/home/semaphore/go/bin:$PATH'
+            - go get -u golang.org/x/lint/golint
+            - checkout
+            - '#go get ./...'
+            - golint .
+        - name: go fmt
+          commands:
+            - sem-version go 1.12
+            - export GO111MODULE=on
+            - export GOPATH=~/go
+            - 'export PATH=/home/semaphore/go/bin:$PATH'
+            - checkout
+            - '#go get ./...'
+            - gofmt -l .
+        - name: go vet
+          commands:
+            - sem-version go 1.12
+            - export GO111MODULE=on
+            - export GOPATH=~/go
+            - 'export PATH=/home/semaphore/go/bin:$PATH'
+            - checkout
+            - '#go get ./...'
+            - go vet .
+  - name: Test 1.14
+    dependencies:
+      - Code Check
+    task:
+      jobs:
+        - name: go test
+          commands:
+            - sem-version go 1.12
+            - export GO111MODULE=on
+            - export GOPATH=~/go
+            - 'export PATH=/home/semaphore/go/bin:$PATH'
+            - checkout
+            - go get ./...
+            - go test -v ./...
+            - go build -v .
+      prologue:
+        commands:
+          - cache restore
+      epilogue:
+        always:
+          commands:
+            - cache store
