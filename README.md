@@ -107,7 +107,7 @@ TODO-1 - Do something important [? - Jul 22, 2020]
 always have a list of todos sorted by priority. Todos are sorted by
 [`Status`](#status) name in the following order.:
 
-'''
+```
 <blank>       
 "?"
 <other statuses not in this list>
@@ -121,7 +121,7 @@ always have a list of todos sorted by priority. Todos are sorted by
 "STALE"
 "HOLD"
 "DONE"
-'''
+```
 
 Todos with the same [`Status`](#status) are sorted by date, oldest first.
 
