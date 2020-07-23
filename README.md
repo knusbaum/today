@@ -1,6 +1,6 @@
 # today
 
-![Semaphore Unit Tests](https://knusbaum.semaphoreci.com/badges/today.svg)
+[![Semaphore Unit Tests](https://knusbaum.semaphoreci.com/badges/today.svg)](https://knusbaum.semaphoreci.com/branches/29f4d916-1283-46fd-a311-81f74182a4c2)
 
 Today is a simple program for tracking daily tasks using a plain-text task
 list. This was developed to help me specifically with my workflow, so is fairly
