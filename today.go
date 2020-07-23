@@ -1,4 +1,4 @@
-package main
+package today
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type today struct {
+type Today struct {
 	startup  []*listItem
 	notes    []string
 	log      []string
@@ -36,14 +36,14 @@ type listItem struct {
 
 // updateStartup makes sure that every startup item is numbered according
 // to it's place in the startup list.
-func (t *today) updateStartup() {
+func (t *Today) updateStartup() {
 	for i, item := range t.startup {
 		item.number = i + 1
 	}
 }
 
 // updateTodos adds dates and statuses to any todos without them.
-func (t *today) updateTodos() {
+func (t *Today) updateTodos() {
 	for _, todo := range t.todos {
 		if todo.jira == "" {
 			todo.jira = fmt.Sprintf("TODO-%d", t.nextTodo)
@@ -66,7 +66,7 @@ func (t *today) updateTodos() {
 	}
 }
 
-func (t *today) Update() {
+func (t *Today) Update() {
 	t.updateStartup()
 	t.updateTodos()
 }
@@ -128,14 +128,14 @@ func (a byPriority) Less(i, j int) bool {
 	return pi < pj
 }
 
-func (t *today) Sort() {
+func (t *Today) Sort() {
 	if len(t.todos) == 0 {
 		return
 	}
 	sort.Stable(byPriority(t.todos))
 }
 
-func (t *today) Clear() {
+func (t *Today) Clear() {
 	k := 0
 	for i := 0; i < len(t.todos); {
 		if t.todos[i].status.name != "DONE" {

@@ -1,4 +1,4 @@
-package main
+package today
 
 import (
 	"bufio"
@@ -18,10 +18,10 @@ var testStartup []*listItem = []*listItem{
 
 func TestWriter(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		today := &today{startup: testStartup}
+		today := &Today{startup: testStartup}
 		var b strings.Builder
 		w := bufio.NewWriter(&b)
-		writeToday(today, w)
+		today.Write(w)
 		expect := `Morning Start Up:
 1. Catch up on slack 
 2. Check the calendar 
@@ -39,7 +39,7 @@ TODO:
 	})
 
 	t.Run("full", func(t *testing.T) {
-		today := &today{
+		today := &Today{
 			startup: testStartup,
 			notes: []string{
 				"foop boop doop This is a note.",
@@ -74,7 +74,7 @@ TODO:
 		}
 		var b strings.Builder
 		w := bufio.NewWriter(&b)
-		writeToday(today, w)
+		today.Write(w)
 		expect := `Morning Start Up:
 1. Catch up on slack 
 2. Check the calendar 
@@ -105,7 +105,7 @@ Some other random task
 }
 
 func TestReadback(t *testing.T) {
-	today := &today{
+	today := &Today{
 		startup: testStartup,
 		notes: []string{
 			"foop boop doop This is a note.",
@@ -140,11 +140,11 @@ func TestReadback(t *testing.T) {
 	}
 	var b strings.Builder
 	w := bufio.NewWriter(&b)
-	writeToday(today, w)
+	today.Write(w)
 
 	r := strings.NewReader(b.String())
 	p := NewParser(r)
-	newToday, err := p.parseToday()
+	newToday, err := p.Parse()
 
 	assert.NoError(t, err)
 	if !assert.NotNil(t, newToday) {

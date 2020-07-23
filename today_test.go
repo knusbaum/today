@@ -1,4 +1,4 @@
-package main
+package today
 
 import (
 	"bufio"
@@ -14,7 +14,7 @@ import (
 func TestClear(t *testing.T) {
 	t.Run("done", func(t *testing.T) {
 		now := time.Now()
-		today := &today{
+		today := &Today{
 			todos: []*todo{
 				&todo{description: "should not exist", status: status{name: "DONE", date: now}},
 				&todo{description: "task 0", status: status{name: "?", date: now}},
@@ -31,7 +31,7 @@ func TestClear(t *testing.T) {
 	})
 	t.Run("same", func(t *testing.T) {
 		now := time.Now()
-		today := &today{
+		today := &Today{
 			todos: []*todo{
 				&todo{description: "task 0", status: status{name: "", date: now}},
 				&todo{description: "task 1", status: status{name: "?", date: now}},
@@ -51,7 +51,7 @@ func TestClear(t *testing.T) {
 func TestSortTodos(t *testing.T) {
 	t.Run("priority", func(t *testing.T) {
 		now := time.Now()
-		today := &today{
+		today := &Today{
 			todos: []*todo{
 				&todo{description: "task 3", status: status{name: "IN PROGRESS", date: now}},
 				&todo{description: "task 9", status: status{name: "STALE", date: now}},
@@ -75,7 +75,7 @@ func TestSortTodos(t *testing.T) {
 
 	t.Run("date", func(t *testing.T) {
 		now := time.Now()
-		today := &today{
+		today := &Today{
 			todos: []*todo{
 				&todo{description: "task 14", status: status{name: "DONE", date: now}},
 				&todo{description: "task 13", status: status{name: "HOLD", date: now.Add(48 * time.Hour)}},
@@ -106,7 +106,7 @@ func TestSortTodos(t *testing.T) {
 
 	t.Run("hold", func(t *testing.T) {
 		now := time.Now()
-		today := &today{
+		today := &Today{
 			todos: []*todo{
 				&todo{description: "task 4", status: status{name: "IN PROGRESS", date: now}},
 				&todo{description: "task 10", status: status{name: "STALE", date: now}},
@@ -130,7 +130,7 @@ func TestSortTodos(t *testing.T) {
 
 	t.Run("waiting", func(t *testing.T) {
 		now := time.Now()
-		today := &today{
+		today := &Today{
 			todos: []*todo{
 				// 0, 1, 2 have same priority as 3, 4, 5 but always come first because their date is earlier.
 				&todo{description: "task 10", status: status{name: "HOLD", date: now.Add(48 * time.Hour)}},
@@ -155,7 +155,7 @@ func TestSortTodos(t *testing.T) {
 
 	t.Run("stale", func(t *testing.T) {
 		now := time.Now()
-		today := &today{
+		today := &Today{
 			todos: []*todo{
 				&todo{description: "task 0", status: status{name: "STALE", date: now.Add(-24 * 7 * time.Hour)}},
 				&todo{description: "task 7", status: status{name: "REVIEW", date: now}},
@@ -180,7 +180,7 @@ func TestSortTodos(t *testing.T) {
 
 func TestUpdateList(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		today := &today{
+		today := &Today{
 			startup: []*listItem{
 				&listItem{number: 0, description: "item 0"},
 				&listItem{number: 0, description: "item 1"},
@@ -198,7 +198,7 @@ func TestUpdateList(t *testing.T) {
 	})
 
 	t.Run("addItem", func(t *testing.T) {
-		today := &today{
+		today := &Today{
 			startup: []*listItem{
 				&listItem{number: 1, description: "item 0"},
 				&listItem{number: 2, description: "item 1"},
@@ -246,7 +246,7 @@ Something else
 
 	r := strings.NewReader(todayText)
 	p := NewParser(r)
-	td, err := p.parseToday()
+	td, err := p.Parse()
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -254,7 +254,7 @@ Something else
 	td.Sort()
 	var b strings.Builder
 	w := bufio.NewWriter(&b)
-	writeToday(td, w)
+	td.Write(w)
 	result := b.String()
 
 	expected := `Morning Start Up:

@@ -1,4 +1,4 @@
-package main
+package today
 
 import (
 	"bufio"
@@ -261,8 +261,8 @@ func NewParser(r io.Reader) *Parser {
 	return &Parser{rdr: rdr}
 }
 
-func (p *Parser) parseToday() (*today, error) {
-	var t today
+func (p *Parser) Parse() (*Today, error) {
+	var t Today
 
 	startup, err := p.parseStartup()
 	if err != nil {

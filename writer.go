@@ -1,4 +1,4 @@
-package main
+package today
 
 import (
 	"bufio"
@@ -94,7 +94,8 @@ func writeListItem(item *listItem, w *bufio.Writer) error {
 	return nil
 }
 
-func writeToday(t *today, w io.Writer) error {
+// Write writes a Today out to writer w in the normal form
+func (t *Today) Write(w io.Writer) error {
 	var wtr *bufio.Writer
 	if bw, ok := w.(*bufio.Writer); ok {
 		wtr = bw

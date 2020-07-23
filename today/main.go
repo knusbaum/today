@@ -9,6 +9,8 @@ import (
 	"path"
 	"sort"
 	"time"
+
+	"github.com/knusbaum/today"
 )
 
 const (
@@ -108,7 +110,6 @@ func openWriteToday(dir string) (*os.File, error) {
 }
 
 func generateToday(dir string) error {
-
 	f, err := openMostRecent(dir)
 	if err != nil {
 		if err == errNoTodayFiles {
@@ -117,13 +118,14 @@ func generateToday(dir string) error {
 				return err
 			}
 			defer out.Close()
-			return writeToday(&today{}, out)
+			var t today.Today
+			return t.Write(out)
 		}
 		return err
 	}
 	defer f.Close()
 
-	t, err := NewParser(f).parseToday()
+	t, err := today.NewParser(f).Parse()
 	if err != nil {
 		log.Fatalf("Failed to parse today: %s", err)
 	}
@@ -136,7 +138,7 @@ func generateToday(dir string) error {
 		return err
 	}
 	defer out.Close()
-	return writeToday(t, out)
+	return t.Write(out)
 }
 
 func main() {
@@ -181,7 +183,7 @@ func main() {
 		}
 	}
 
-	t, err := NewParser(in).parseToday()
+	t, err := today.NewParser(in).Parse()
 	if err != nil {
 		log.Fatalf("Failed to parse today: %s", err)
 	}
@@ -206,7 +208,7 @@ func main() {
 		defer f.Close()
 		out = f
 	}
-	err = writeToday(t, out)
+	err = t.Write(out)
 	if err != nil {
 		log.Fatalf("Failed to write today: %s", err)
 	}

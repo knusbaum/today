@@ -1,4 +1,4 @@
-package main
+package today
 
 import (
 	"strings"
@@ -31,7 +31,7 @@ TODO:
 
 `)
 	p := NewParser(r)
-	today, err := p.parseToday()
+	today, err := p.Parse()
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
@@ -78,7 +78,7 @@ TODO:
 
 `)
 	p := NewParser(r)
-	today, err := p.parseToday()
+	today, err := p.Parse()
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
@@ -105,7 +105,7 @@ Log:
 TODO:
 `)
 	p := NewParser(r)
-	today, err := p.parseToday()
+	today, err := p.Parse()
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
@@ -135,7 +135,7 @@ TODO-240 - Another Task [WAITING - waiting to hear from client multi-hyphen-word
 Yet another task.
 `)
 	p := NewParser(r)
-	today, err := p.parseToday()
+	today, err := p.Parse()
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
