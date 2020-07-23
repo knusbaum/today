@@ -59,7 +59,7 @@ blocks:
             - checkout
             - '#go get ./...'
             - go vet .
-		- name: staticcheck
+        - name: staticcheck
           commands:
             - sem-version go 1.12
             - export GO111MODULE=on
