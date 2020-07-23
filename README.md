@@ -165,9 +165,10 @@ Some useful exceptions to the ordering are:
   the top. I use this to periodically check up on slow-moving or stale tasks.
 
 ### Status
-Each item in `Morning Start Up` and `TODO` has a `Status`. In its most basic
-form, a `Status` is just a status name inside square brackets. A status name is
-a series of capitalized letters. A basic status might be `[IN PROGRESS]`.
+Each item in `Morning Start Up` and `TODO` has a `Status`, which appears as the
+last element of the line. In its most basic form, a `Status` is just a status
+name inside square brackets. A status name is a series of capitalized letters.
+A basic status might be `[IN PROGRESS]`.
 
 Each status also has a comment field, and a date. Comments are optional, but
 `today` will apply a date to any `Status` that doesn't already have one.
