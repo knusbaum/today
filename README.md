@@ -8,7 +8,7 @@ rigid in its structure.
 
 
 ## Today Files
-The today program operates on "today files". A today file contains several
+The `today` program operates on "today files". A today file contains several
 sections to help track tasks.
 
 A today file contains 4 sections:
@@ -49,7 +49,7 @@ during [Generation](#generation). Every time a [`Status`](#status) is applied
 to a task in the [TODO](#todo) section, a line is added to the Log section with
 a timestamp describing what status was applied.
 
-For example, when today notices a task with a new status (e.g. `TASK-123 - Do
+For example, when `today` notices a task with a new status (e.g. `TASK-123 - Do
 something important [DONE - Finished up]`, It Makes an entry in the log like
 so:
 ```
@@ -71,7 +71,7 @@ Do something important
 ```
 
 When `today` reads such a task, it gives it a name like `TODO-1`, and an empty
-[`Status`](#status) with today's date:
+[`Status`](#status) with the current day's date:
 
 ```
 TODO-1 - Do something important [? - Jul 22, 2020]
@@ -85,7 +85,7 @@ tracking system, just the one I use for work.
 #### Comments
 A todo may have any number of comments beneath it. A comment is a line that
 begins with a tab (`\t`) character. Blank lines are allowed between todos and
-their comments, but will be eliminated by today.
+their comments, but will be eliminated by `today`.
 ```
 Do something important
 	step 1
@@ -174,13 +174,13 @@ Each status also has a comment field, and a date. Comments are optional, but
 `today` will apply a date to any `Status` that doesn't already have one.
 
 Comments come after the status name, separated by space and a hyphen, and can
-be any string of text: `[IN PROGRESS - Working on pr #12]'.
+be any string of text: `[IN PROGRESS - Working on pr #12]`.
 
 Dates follow the status name and the comment if one is present, again separated
-by space and hyphen. Dates must follow the format (given in go `time.Format`
-notation) `Jan _2, 2006` or they will be considered part of the comment. Both
-of these are valid statuses with dates:
-
+by space and hyphen. Dates must follow the format (given in Go's
+[`time.Format`](https://golang.org/pkg/time/#Time.Format) notation) `Jan _2,
+2006` or they will be considered part of the comment. Both of these are valid
+statuses with dates:
 ```
 [IN PROGRESS - Working on pr #12 - Jan 16, 2020]
 [READY - Jan 14, 2020]
@@ -190,18 +190,19 @@ of these are valid statuses with dates:
 Today operates in the directory `~/today`, or the directory specified with the
 `-d` option.
 
-When today is run, it looks for a file named with today's date in the operating
-directory. If it does not find one, it attempts to generate one from the most
-recent previous file, determined by the date in the file name. (See
-[Generation](#generation))
+When `today` is run, it looks for a file named with the current day's date in
+the operating directory. If it does not find one, it attempts to generate one
+from the most recent previous file, determined by the date in the file name.
+(See [Generation](#generation))
 
-If doing [Generation](#generation), or when passed the `-c` flag, 'today' will
+
+If doing [Generation](#generation), or when passed the `-c` flag, `today` will
 clear `"DONE"` tasks and `Morning Start Up` statuses.
 
 By default, `today` will update the statuses of the TODO section, and then sort
 the todos.
 
-With the `-i` flag, 'today' will read from stdin and write to stdout rather
+With the `-i` flag, `today` will read from stdin and write to stdout rather
 than looking in any directory.
 
 
