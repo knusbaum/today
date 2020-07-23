@@ -273,25 +273,25 @@ func (p *Parser) Parse() (*Today, error) {
 
 	startup, err := p.parseStartup()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse startup: %s", err)
+		return nil, fmt.Errorf("failed to parse startup: %s", err)
 	}
 	t.Startup = startup
 
 	notes, err := p.parseNotes()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse notes: %s", err)
+		return nil, fmt.Errorf("failed to parse notes: %s", err)
 	}
 	t.Notes = notes
 
 	log, err := p.parseLog()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse log: %s", err)
+		return nil, fmt.Errorf("failed to parse log: %s", err)
 	}
 	t.Log = log
 
 	todos, err := p.parseTODO()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse todo: %s", err)
+		return nil, fmt.Errorf("failed to parse todo: %s", err)
 	}
 	t.Tasks = todos
 

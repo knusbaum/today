@@ -142,7 +142,7 @@ func generateToday(dir string) error {
 }
 
 func main() {
-	todaydir, err := os.UserHomeDir()
+	todaydir, _ := os.UserHomeDir()
 	if todaydir != "" {
 		todaydir += "/today"
 	}

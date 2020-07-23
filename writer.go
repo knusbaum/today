@@ -81,6 +81,9 @@ func writeTodo(t *Task, w *bufio.Writer) error {
 
 func writeListItem(item *ListItem, w *bufio.Writer) error {
 	_, err := w.WriteString(fmt.Sprintf("%d. %s ", item.number, item.Description))
+	if err != nil {
+		return err
+	}
 	if item.Status.Name != "" || item.Status.Comment != "" {
 		err := writeStatus(&item.Status, w)
 		if err != nil {
