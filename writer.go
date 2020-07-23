@@ -6,27 +6,27 @@ import (
 	"io"
 )
 
-func writeStatus(s *status, w *bufio.Writer) error {
+func writeStatus(s *Status, w *bufio.Writer) error {
 	var (
 		statusStr string = "["
 		wrotename bool
 	)
 
-	if s.name != "" {
-		statusStr += s.name
+	if s.Name != "" {
+		statusStr += s.Name
 		wrotename = true
 	}
 
-	if s.comment != "" {
+	if s.Comment != "" {
 		if wrotename {
 			statusStr += " - "
 		}
-		statusStr += s.comment
+		statusStr += s.Comment
 	}
 
-	if !s.date.IsZero() {
+	if !s.Date.IsZero() {
 		statusStr += " - "
-		statusStr += s.date.Format("Jan _2, 2006")
+		statusStr += s.Date.Format("Jan _2, 2006")
 	}
 
 	statusStr += "]"
@@ -37,23 +37,23 @@ func writeStatus(s *status, w *bufio.Writer) error {
 	return nil
 }
 
-func writeTodo(t *todo, w *bufio.Writer) error {
-	if t.jira != "" {
-		_, err := w.WriteString(t.jira + " - ")
+func writeTodo(t *Task, w *bufio.Writer) error {
+	if t.Name != "" {
+		_, err := w.WriteString(t.Name + " - ")
 		if err != nil {
 			return err
 		}
 	}
 
-	if t.description != "" {
-		_, err := w.WriteString(t.description + " ")
+	if t.Description != "" {
+		_, err := w.WriteString(t.Description + " ")
 		if err != nil {
 			return err
 		}
 	}
 
-	if t.status.name != "" || t.status.comment != "" {
-		err := writeStatus(&t.status, w)
+	if t.Status.Name != "" || t.Status.Comment != "" {
+		err := writeStatus(&t.Status, w)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func writeTodo(t *todo, w *bufio.Writer) error {
 		return err
 	}
 
-	for _, c := range t.comments {
+	for _, c := range t.Comments {
 		_, err := w.WriteString("\t" + c + "\n")
 		if err != nil {
 			return err
@@ -79,10 +79,10 @@ func writeTodo(t *todo, w *bufio.Writer) error {
 	return nil
 }
 
-func writeListItem(item *listItem, w *bufio.Writer) error {
-	_, err := w.WriteString(fmt.Sprintf("%d. %s ", item.number, item.description))
-	if item.status.name != "" || item.status.comment != "" {
-		err := writeStatus(&item.status, w)
+func writeListItem(item *ListItem, w *bufio.Writer) error {
+	_, err := w.WriteString(fmt.Sprintf("%d. %s ", item.number, item.Description))
+	if item.Status.Name != "" || item.Status.Comment != "" {
+		err := writeStatus(&item.Status, w)
 		if err != nil {
 			return err
 		}
@@ -90,6 +90,16 @@ func writeListItem(item *listItem, w *bufio.Writer) error {
 	_, err = w.WriteString("\n")
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (t *TaskList) Write(w *bufio.Writer) error {
+	for _, todo := range t.tasks {
+		err := writeTodo(todo, w)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -107,7 +117,7 @@ func (t *Today) Write(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, item := range t.startup {
+	for _, item := range t.Startup {
 		err = writeListItem(item, wtr)
 		if err != nil {
 			return err
@@ -118,7 +128,7 @@ func (t *Today) Write(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, n := range t.notes {
+	for _, n := range t.Notes {
 		_, err = wtr.WriteString(n + "\n")
 		if err != nil {
 			return err
@@ -129,7 +139,7 @@ func (t *Today) Write(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, l := range t.log {
+	for _, l := range t.Log {
 		_, err = wtr.WriteString(l + "\n")
 		if err != nil {
 			return err
@@ -140,11 +150,9 @@ func (t *Today) Write(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, todo := range t.todos {
-		err = writeTodo(todo, wtr)
-		if err != nil {
-			return err
-		}
+	err = t.Tasks.Write(wtr)
+	if err != nil {
+		return err
 	}
 
 	_, err = wtr.WriteString("\n")

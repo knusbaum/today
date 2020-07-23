@@ -37,21 +37,21 @@ TODO:
 		return
 	}
 
-	if !assert.Len(t, today.startup, 4) {
+	if !assert.Len(t, today.Startup, 4) {
 		return
 	}
-	assert.Len(t, today.startup, 4)
-	assert.Equal(t, 1, today.startup[0].number)
-	assert.Equal(t, "Catch up on slack", today.startup[0].description)
-	assert.Equal(t, 2, today.startup[1].number)
-	assert.Equal(t, "Check the calendar", today.startup[1].description)
-	assert.Equal(t, 0, today.startup[2].number)
-	assert.Equal(t, "Read the inbox", today.startup[2].description)
-	assert.Equal(t, "DONE", today.startup[2].status.name)
-	assert.Equal(t, "something", today.startup[2].status.comment)
-	assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), today.startup[2].status.date)
-	assert.Equal(t, 0, today.startup[3].number)
-	assert.Equal(t, "look at JIRAPROJECT", today.startup[3].description)
+	assert.Len(t, today.Startup, 4)
+	assert.Equal(t, 1, today.Startup[0].number)
+	assert.Equal(t, "Catch up on slack", today.Startup[0].Description)
+	assert.Equal(t, 2, today.Startup[1].number)
+	assert.Equal(t, "Check the calendar", today.Startup[1].Description)
+	assert.Equal(t, 0, today.Startup[2].number)
+	assert.Equal(t, "Read the inbox", today.Startup[2].Description)
+	assert.Equal(t, "DONE", today.Startup[2].Status.Name)
+	assert.Equal(t, "something", today.Startup[2].Status.Comment)
+	assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), today.Startup[2].Status.Date)
+	assert.Equal(t, 0, today.Startup[3].number)
+	assert.Equal(t, "look at JIRAPROJECT", today.Startup[3].Description)
 }
 
 func TestParseNotes(t *testing.T) {
@@ -84,7 +84,7 @@ TODO:
 		return
 	}
 
-	if !assert.Len(t, today.notes, 5) {
+	if !assert.Len(t, today.Notes, 5) {
 		return
 	}
 }
@@ -111,7 +111,7 @@ TODO:
 		return
 	}
 
-	if !assert.Len(t, today.log, 3) {
+	if !assert.Len(t, today.Log, 3) {
 		return
 	}
 }
@@ -131,7 +131,7 @@ TODO:
 SOMEJIRA-1234 - Do something for this jira. [IN-PROGRESS]
 	* Some note.
 	* Some other note.
-TODO-240 - Another Task [WAITING - waiting to hear from client multi-hyphen-word - Jan 5, 2020]
+TASK-240 - Another Task [WAITING - waiting to hear from client multi-hyphen-word - Jan 5, 2020]
 Yet another task.
 `)
 	p := NewParser(r)
@@ -141,70 +141,70 @@ Yet another task.
 		return
 	}
 
-	if !assert.Len(t, today.todos, 3) {
+	if !assert.Len(t, today.Tasks.tasks, 3) {
 		return
 	}
 
-	assert.Equal(t, "SOMEJIRA-1234", today.todos[0].jira)
-	assert.Equal(t, "Do something for this jira.", today.todos[0].description)
-	assert.Equal(t, "IN-PROGRESS", today.todos[0].status.name)
-	if !assert.Len(t, today.todos[0].comments, 2) {
+	assert.Equal(t, "SOMEJIRA-1234", today.Tasks.tasks[0].Name)
+	assert.Equal(t, "Do something for this jira.", today.Tasks.tasks[0].Description)
+	assert.Equal(t, "IN-PROGRESS", today.Tasks.tasks[0].Status.Name)
+	if !assert.Len(t, today.Tasks.tasks[0].Comments, 2) {
 		return
 	}
-	assert.Equal(t, "* Some note.", today.todos[0].comments[0])
-	assert.Equal(t, "* Some other note.", today.todos[0].comments[1])
+	assert.Equal(t, "* Some note.", today.Tasks.tasks[0].Comments[0])
+	assert.Equal(t, "* Some other note.", today.Tasks.tasks[0].Comments[1])
 
-	assert.Equal(t, "TODO-240", today.todos[1].jira)
-	assert.Equal(t, "Another Task", today.todos[1].description)
-	assert.Equal(t, "WAITING", today.todos[1].status.name)
-	assert.Equal(t, "waiting to hear from client multi-hyphen-word", today.todos[1].status.comment)
-	assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), today.todos[1].status.date)
-	assert.Equal(t, 241, today.nextTodo)
+	assert.Equal(t, "TASK-240", today.Tasks.tasks[1].Name)
+	assert.Equal(t, "Another Task", today.Tasks.tasks[1].Description)
+	assert.Equal(t, "WAITING", today.Tasks.tasks[1].Status.Name)
+	assert.Equal(t, "waiting to hear from client multi-hyphen-word", today.Tasks.tasks[1].Status.Comment)
+	assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), today.Tasks.tasks[1].Status.Date)
+	assert.Equal(t, 241, today.Tasks.nextTaskID)
 
-	assert.Equal(t, "", today.todos[2].jira)
-	assert.Equal(t, "Yet another task.", today.todos[2].description)
-	assert.Equal(t, "", today.todos[2].status.name)
-	assert.Equal(t, "", today.todos[2].status.comment)
-	assert.True(t, today.todos[2].status.date.IsZero())
+	assert.Equal(t, "", today.Tasks.tasks[2].Name)
+	assert.Equal(t, "Yet another task.", today.Tasks.tasks[2].Description)
+	assert.Equal(t, "", today.Tasks.tasks[2].Status.Name)
+	assert.Equal(t, "", today.Tasks.tasks[2].Status.Comment)
+	assert.True(t, today.Tasks.tasks[2].Status.Date.IsZero())
 }
 
 func TestParseStatus(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		s := parseStatus("basic status")
-		assert.Equal(t, "basic status", s.comment)
+		assert.Equal(t, "basic status", s.Comment)
 	})
 	t.Run("status", func(t *testing.T) {
 		s := parseStatus("IN PROGRESS")
-		assert.Equal(t, "IN PROGRESS", s.name)
+		assert.Equal(t, "IN PROGRESS", s.Name)
 	})
 	t.Run("basic+status", func(t *testing.T) {
 		s := parseStatus("IN PROGRESS - basic status")
-		assert.Equal(t, "IN PROGRESS", s.name)
-		assert.Equal(t, "basic status", s.comment)
+		assert.Equal(t, "IN PROGRESS", s.Name)
+		assert.Equal(t, "basic status", s.Comment)
 	})
 	t.Run("full", func(t *testing.T) {
 		s := parseStatus("WAITING FOR CUSTOMER - waiting to hear from client multi-hyphen-word - Jan 5, 2020")
-		assert.Equal(t, "WAITING FOR CUSTOMER", s.name)
-		assert.Equal(t, "waiting to hear from client multi-hyphen-word", s.comment)
-		assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), s.date)
+		assert.Equal(t, "WAITING FOR CUSTOMER", s.Name)
+		assert.Equal(t, "waiting to hear from client multi-hyphen-word", s.Comment)
+		assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), s.Date)
 	})
 	t.Run("status+date", func(t *testing.T) {
 		s := parseStatus("WAITING FOR CUSTOMER - Jan 5, 2020")
-		assert.Equal(t, "WAITING FOR CUSTOMER", s.name)
-		assert.Equal(t, "", s.comment)
-		assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), s.date)
+		assert.Equal(t, "WAITING FOR CUSTOMER", s.Name)
+		assert.Equal(t, "", s.Comment)
+		assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), s.Date)
 	})
 	t.Run("bad-date", func(t *testing.T) {
 		s := parseStatus("WAITING FOR CUSTOMER - waiting to hear from client multi-hyphen-word - Jan 335, 2020")
-		assert.Equal(t, "WAITING FOR CUSTOMER", s.name)
-		assert.Equal(t, "waiting to hear from client multi-hyphen-word - Jan 335, 2020", s.comment)
+		assert.Equal(t, "WAITING FOR CUSTOMER", s.Name)
+		assert.Equal(t, "waiting to hear from client multi-hyphen-word - Jan 335, 2020", s.Comment)
 	})
 	t.Run("comment-brackets", func(t *testing.T) {
 		p := NewParser(strings.NewReader("JIRAPROJECT-123 - [Client X] - Can't frobnicate the blips  [STALE - Jun 10, 2020]\n"))
 		todo := p.parseTodo()
-		assert.Equal(t, "JIRAPROJECT-123", todo.jira)
-		assert.Equal(t, "[Client X] - Can't frobnicate the blips", todo.description)
-		assert.Equal(t, "STALE", todo.status.name)
+		assert.Equal(t, "JIRAPROJECT-123", todo.Name)
+		assert.Equal(t, "[Client X] - Can't frobnicate the blips", todo.Description)
+		assert.Equal(t, "STALE", todo.Status.Name)
 	})
 }
 

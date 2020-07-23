@@ -9,16 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testStartup []*listItem = []*listItem{
-	&listItem{number: 1, description: "Catch up on slack"},
-	&listItem{number: 2, description: "Check the calendar"},
-	&listItem{number: 3, description: "Read the inbox"},
-	&listItem{number: 4, description: "look at JIRAPROJECT"},
+var testStartup []*ListItem = []*ListItem{
+	&ListItem{number: 1, Description: "Catch up on slack"},
+	&ListItem{number: 2, Description: "Check the calendar"},
+	&ListItem{number: 3, Description: "Read the inbox"},
+	&ListItem{number: 4, Description: "look at JIRAPROJECT"},
 }
 
 func TestWriter(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		today := &Today{startup: testStartup}
+		today := &Today{Startup: testStartup}
 		var b strings.Builder
 		w := bufio.NewWriter(&b)
 		today.Write(w)
@@ -40,35 +40,37 @@ TODO:
 
 	t.Run("full", func(t *testing.T) {
 		today := &Today{
-			startup: testStartup,
-			notes: []string{
+			Startup: testStartup,
+			Notes: []string{
 				"foop boop doop This is a note.",
 				"note important_facts ",
 				"note testing",
 				"note deploy",
 				"note custom_build",
 			},
-			log: []string{
+			Log: []string{
 				"8:30 Starting work",
 				"9:00 Standup",
 				"9:15 Starting on Jira task",
 			},
-			todos: []*todo{
-				&todo{
-					jira:        "SOMEJIRA-123",
-					description: "description of a todo task",
-					status: status{
-						name:    "IN PROGRESS",
-						comment: "waiting for customer",
-						date:    time.Date(2020, 6, 7, 0, 0, 0, 0, time.UTC),
+			Tasks: TaskList{
+				tasks: []*Task{
+					&Task{
+						Name:        "SOMEJIRA-123",
+						Description: "description of a todo task",
+						Status: Status{
+							Name:    "IN PROGRESS",
+							Comment: "waiting for customer",
+							Date:    time.Date(2020, 6, 7, 0, 0, 0, 0, time.UTC),
+						},
+						Comments: []string{
+							"* Some note",
+							"* Some other note",
+						},
 					},
-					comments: []string{
-						"* Some note",
-						"* Some other note",
+					&Task{
+						Description: "Some other random task",
 					},
-				},
-				&todo{
-					description: "Some other random task",
 				},
 			},
 		}
@@ -106,35 +108,37 @@ Some other random task
 
 func TestReadback(t *testing.T) {
 	today := &Today{
-		startup: testStartup,
-		notes: []string{
+		Startup: testStartup,
+		Notes: []string{
 			"foop boop doop This is a note.",
 			"note important_facts ",
 			"note testing",
 			"note deploy",
 			"note custom_build",
 		},
-		log: []string{
+		Log: []string{
 			"8:30 Starting work",
 			"9:00 Standup",
 			"9:15 Starting on Jira task",
 		},
-		todos: []*todo{
-			&todo{
-				jira:        "SOMEJIRA-123",
-				description: "description of a todo task",
-				status: status{
-					name:    "IN PROGRESS",
-					comment: "waiting for customer",
-					date:    time.Date(2020, 6, 7, 0, 0, 0, 0, time.Local),
+		Tasks: TaskList{
+			tasks: []*Task{
+				&Task{
+					Name:        "SOMEJIRA-123",
+					Description: "description of a todo task",
+					Status: Status{
+						Name:    "IN PROGRESS",
+						Comment: "waiting for customer",
+						Date:    time.Date(2020, 6, 7, 0, 0, 0, 0, time.Local),
+					},
+					Comments: []string{
+						"* Some note",
+						"* Some other note",
+					},
 				},
-				comments: []string{
-					"* Some note",
-					"* Some other note",
+				&Task{
+					Description: "Some other random task",
 				},
-			},
-			&todo{
-				description: "Some other random task",
 			},
 		},
 	}

@@ -15,35 +15,39 @@ func TestClear(t *testing.T) {
 	t.Run("done", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
-			todos: []*todo{
-				&todo{description: "should not exist", status: status{name: "DONE", date: now}},
-				&todo{description: "task 0", status: status{name: "?", date: now}},
-				&todo{description: "task 1", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
-				&todo{description: "task 2", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "should not exist", status: status{name: "DONE", date: now}},
+			Tasks: TaskList{
+				tasks: []*Task{
+					&Task{Description: "should not exist", Status: Status{Name: "DONE", Date: now}},
+					&Task{Description: "task 0", Status: Status{Name: "?", Date: now}},
+					&Task{Description: "task 1", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
+					&Task{Description: "task 2", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "should not exist", Status: Status{Name: "DONE", Date: now}},
+				},
 			},
 		}
 		today.Clear()
-		assert.Len(t, today.todos, 3)
-		for i := 0; i < len(today.todos); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		assert.Len(t, today.Tasks.tasks, 3)
+		for i := 0; i < len(today.Tasks.tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
 		}
 	})
 	t.Run("same", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
-			todos: []*todo{
-				&todo{description: "task 0", status: status{name: "", date: now}},
-				&todo{description: "task 1", status: status{name: "?", date: now}},
-				&todo{description: "task 2", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
-				&todo{description: "task 3", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 4", status: status{name: "STALE", date: now}},
+			Tasks: TaskList{
+				tasks: []*Task{
+					&Task{Description: "task 0", Status: Status{Name: "", Date: now}},
+					&Task{Description: "task 1", Status: Status{Name: "?", Date: now}},
+					&Task{Description: "task 2", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
+					&Task{Description: "task 3", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 4", Status: Status{Name: "STALE", Date: now}},
+				},
 			},
 		}
 		today.Clear()
-		assert.Len(t, today.todos, 5)
-		for i := 0; i < len(today.todos); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		assert.Len(t, today.Tasks.tasks, 5)
+		for i := 0; i < len(today.Tasks.tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
 		}
 	})
 }
@@ -52,128 +56,140 @@ func TestSortTodos(t *testing.T) {
 	t.Run("priority", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
-			todos: []*todo{
-				&todo{description: "task 3", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 9", status: status{name: "STALE", date: now}},
-				&todo{description: "task 7", status: status{name: "WAITING", date: now}},
-				&todo{description: "task 10", status: status{name: "HOLD", date: now.Add(48 * time.Hour)}},
-				&todo{description: "task 0", status: status{date: now}},
-				&todo{description: "task 5", status: status{name: "READY", date: now}},
-				&todo{description: "task 8", status: status{name: "RESPONDED", date: now}},
-				&todo{description: "task 1", status: status{name: "?", date: now}},
-				&todo{description: "task 4", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 2", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
-				&todo{description: "task 11", status: status{name: "DONE", date: now}},
-				&todo{description: "task 6", status: status{name: "REVIEW", date: now}},
+			Tasks: TaskList{
+				tasks: []*Task{
+					&Task{Description: "task 3", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 9", Status: Status{Name: "STALE", Date: now}},
+					&Task{Description: "task 7", Status: Status{Name: "WAITING", Date: now}},
+					&Task{Description: "task 10", Status: Status{Name: "HOLD", Date: now.Add(48 * time.Hour)}},
+					&Task{Description: "task 0", Status: Status{Date: now}},
+					&Task{Description: "task 5", Status: Status{Name: "READY", Date: now}},
+					&Task{Description: "task 8", Status: Status{Name: "RESPONDED", Date: now}},
+					&Task{Description: "task 1", Status: Status{Name: "?", Date: now}},
+					&Task{Description: "task 4", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 2", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
+					&Task{Description: "task 11", Status: Status{Name: "DONE", Date: now}},
+					&Task{Description: "task 6", Status: Status{Name: "REVIEW", Date: now}},
+				},
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.todos); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		for i := 0; i < len(today.Tasks.tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
 		}
 	})
 
 	t.Run("date", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
-			todos: []*todo{
-				&todo{description: "task 14", status: status{name: "DONE", date: now}},
-				&todo{description: "task 13", status: status{name: "HOLD", date: now.Add(48 * time.Hour)}},
-				&todo{description: "task 12", status: status{name: "STALE", date: now}},
-				&todo{description: "task 11", status: status{name: "RESPONDED", date: now.Add(24 * time.Hour)}},
-				&todo{description: "task 10", status: status{name: "WAITING", date: now}},
-				&todo{description: "task 9", status: status{name: "REVIEW", date: now.Add(24 * time.Hour)}},
-				&todo{description: "task 8", status: status{name: "REVIEW", date: now}},
-				&todo{description: "task 7", status: status{name: "READY", date: now}},
-				&todo{description: "task 6", status: status{name: "READY", date: now.Add(-24 * time.Hour)}},
-				&todo{description: "task 5", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 4", status: status{name: "IN PROGRESS", date: now.Add(-24 * time.Hour)}},
-				&todo{description: "task 3", status: status{name: "IN PROGRESS", date: now.Add(-48 * time.Hour)}},
-				&todo{description: "task 2", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
-				&todo{description: "task 1", status: status{name: "?", date: now.Add(-24 * time.Hour)}},
-				&todo{description: "task 0", status: status{date: now.Add(-48 * time.Hour)}},
+			Tasks: TaskList{
+				tasks: []*Task{
+					&Task{Description: "task 14", Status: Status{Name: "DONE", Date: now}},
+					&Task{Description: "task 13", Status: Status{Name: "HOLD", Date: now.Add(48 * time.Hour)}},
+					&Task{Description: "task 12", Status: Status{Name: "STALE", Date: now}},
+					&Task{Description: "task 11", Status: Status{Name: "RESPONDED", Date: now.Add(24 * time.Hour)}},
+					&Task{Description: "task 10", Status: Status{Name: "WAITING", Date: now}},
+					&Task{Description: "task 9", Status: Status{Name: "REVIEW", Date: now.Add(24 * time.Hour)}},
+					&Task{Description: "task 8", Status: Status{Name: "REVIEW", Date: now}},
+					&Task{Description: "task 7", Status: Status{Name: "READY", Date: now}},
+					&Task{Description: "task 6", Status: Status{Name: "READY", Date: now.Add(-24 * time.Hour)}},
+					&Task{Description: "task 5", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 4", Status: Status{Name: "IN PROGRESS", Date: now.Add(-24 * time.Hour)}},
+					&Task{Description: "task 3", Status: Status{Name: "IN PROGRESS", Date: now.Add(-48 * time.Hour)}},
+					&Task{Description: "task 2", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
+					&Task{Description: "task 1", Status: Status{Name: "?", Date: now.Add(-24 * time.Hour)}},
+					&Task{Description: "task 0", Status: Status{Date: now.Add(-48 * time.Hour)}},
+				},
 			},
 		}
 		// Unlike the other tests, which depend on the sort being stable (which is by design), this set of todos has an absolute order, so
 		// we can shuffle the list before we sort.
 		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(today.todos), func(i, j int) { today.todos[i], today.todos[j] = today.todos[j], today.todos[i] })
+		rand.Shuffle(len(today.Tasks.tasks), func(i, j int) {
+			today.Tasks.tasks[i], today.Tasks.tasks[j] = today.Tasks.tasks[j], today.Tasks.tasks[i]
+		})
 		today.Sort()
-		for i := 0; i < len(today.todos); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		for i := 0; i < len(today.Tasks.tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
 		}
 	})
 
 	t.Run("hold", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
-			todos: []*todo{
-				&todo{description: "task 4", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 10", status: status{name: "STALE", date: now}},
-				&todo{description: "task 8", status: status{name: "WAITING", date: now}},
-				&todo{description: "task 0", status: status{name: "HOLD", date: now}},
-				&todo{description: "task 1", status: status{date: now}},
-				&todo{description: "task 6", status: status{name: "READY", date: now}},
-				&todo{description: "task 9", status: status{name: "RESPONDED", date: now}},
-				&todo{description: "task 2", status: status{name: "?", date: now}},
-				&todo{description: "task 5", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 3", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
-				&todo{description: "task 11", status: status{name: "DONE", date: now}},
-				&todo{description: "task 7", status: status{name: "REVIEW", date: now}},
+			Tasks: TaskList{
+				tasks: []*Task{
+					&Task{Description: "task 4", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 10", Status: Status{Name: "STALE", Date: now}},
+					&Task{Description: "task 8", Status: Status{Name: "WAITING", Date: now}},
+					&Task{Description: "task 0", Status: Status{Name: "HOLD", Date: now}},
+					&Task{Description: "task 1", Status: Status{Date: now}},
+					&Task{Description: "task 6", Status: Status{Name: "READY", Date: now}},
+					&Task{Description: "task 9", Status: Status{Name: "RESPONDED", Date: now}},
+					&Task{Description: "task 2", Status: Status{Name: "?", Date: now}},
+					&Task{Description: "task 5", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 3", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
+					&Task{Description: "task 11", Status: Status{Name: "DONE", Date: now}},
+					&Task{Description: "task 7", Status: Status{Name: "REVIEW", Date: now}},
+				},
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.todos); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		for i := 0; i < len(today.Tasks.tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
 		}
 	})
 
 	t.Run("waiting", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
-			todos: []*todo{
-				// 0, 1, 2 have same priority as 3, 4, 5 but always come first because their date is earlier.
-				&todo{description: "task 10", status: status{name: "HOLD", date: now.Add(48 * time.Hour)}},
-				&todo{description: "task 6", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 7", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 3", status: status{date: now}},
-				&todo{description: "task 4", status: status{name: "?", date: now}},
-				&todo{description: "task 5", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
-				&todo{description: "task 0", status: status{name: "REVIEW", date: now.Add(-24 * time.Hour)}},
-				&todo{description: "task 9", status: status{name: "STALE", date: now}},
-				&todo{description: "task 1", status: status{name: "WAITING", date: now.Add(-24 * time.Hour)}},
-				&todo{description: "task 11", status: status{name: "DONE", date: now}},
-				&todo{description: "task 8", status: status{name: "READY", date: now}},
-				&todo{description: "task 2", status: status{name: "RESPONDED", date: now.Add(-24 * time.Hour)}},
+			Tasks: TaskList{
+				tasks: []*Task{
+					// 0, 1, 2 have same priority as 3, 4, 5 but always come first because their date is earlier.
+					&Task{Description: "task 10", Status: Status{Name: "HOLD", Date: now.Add(48 * time.Hour)}},
+					&Task{Description: "task 6", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 7", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 3", Status: Status{Date: now}},
+					&Task{Description: "task 4", Status: Status{Name: "?", Date: now}},
+					&Task{Description: "task 5", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
+					&Task{Description: "task 0", Status: Status{Name: "REVIEW", Date: now.Add(-24 * time.Hour)}},
+					&Task{Description: "task 9", Status: Status{Name: "STALE", Date: now}},
+					&Task{Description: "task 1", Status: Status{Name: "WAITING", Date: now.Add(-24 * time.Hour)}},
+					&Task{Description: "task 11", Status: Status{Name: "DONE", Date: now}},
+					&Task{Description: "task 8", Status: Status{Name: "READY", Date: now}},
+					&Task{Description: "task 2", Status: Status{Name: "RESPONDED", Date: now.Add(-24 * time.Hour)}},
+				},
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.todos); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		for i := 0; i < len(today.Tasks.tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
 		}
 	})
 
 	t.Run("stale", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
-			todos: []*todo{
-				&todo{description: "task 0", status: status{name: "STALE", date: now.Add(-24 * 7 * time.Hour)}},
-				&todo{description: "task 7", status: status{name: "REVIEW", date: now}},
-				&todo{description: "task 1", status: status{date: now}},
-				&todo{description: "task 11", status: status{name: "DONE", date: now}},
-				&todo{description: "task 4", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 5", status: status{name: "IN PROGRESS", date: now}},
-				&todo{description: "task 8", status: status{name: "WAITING", date: now}},
-				&todo{description: "task 2", status: status{name: "?", date: now}},
-				&todo{description: "task 10", status: status{name: "HOLD", date: now.Add(48 * time.Hour)}},
-				&todo{description: "task 3", status: status{name: "SOMEUNKNOWNSTATUS", date: now}},
-				&todo{description: "task 6", status: status{name: "READY", date: now}},
-				&todo{description: "task 9", status: status{name: "RESPONDED", date: now}},
+			Tasks: TaskList{
+				tasks: []*Task{
+					&Task{Description: "task 0", Status: Status{Name: "STALE", Date: now.Add(-24 * 7 * time.Hour)}},
+					&Task{Description: "task 7", Status: Status{Name: "REVIEW", Date: now}},
+					&Task{Description: "task 1", Status: Status{Date: now}},
+					&Task{Description: "task 11", Status: Status{Name: "DONE", Date: now}},
+					&Task{Description: "task 4", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 5", Status: Status{Name: "IN PROGRESS", Date: now}},
+					&Task{Description: "task 8", Status: Status{Name: "WAITING", Date: now}},
+					&Task{Description: "task 2", Status: Status{Name: "?", Date: now}},
+					&Task{Description: "task 10", Status: Status{Name: "HOLD", Date: now.Add(48 * time.Hour)}},
+					&Task{Description: "task 3", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
+					&Task{Description: "task 6", Status: Status{Name: "READY", Date: now}},
+					&Task{Description: "task 9", Status: Status{Name: "RESPONDED", Date: now}},
+				},
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.todos); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.todos[i].description)
+		for i := 0; i < len(today.Tasks.tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
 		}
 	})
 }
@@ -181,37 +197,37 @@ func TestSortTodos(t *testing.T) {
 func TestUpdateList(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		today := &Today{
-			startup: []*listItem{
-				&listItem{number: 0, description: "item 0"},
-				&listItem{number: 0, description: "item 1"},
-				&listItem{number: 0, description: "item 2"},
-				&listItem{number: 0, description: "item 3"},
-				&listItem{number: 0, description: "item 4"},
-				&listItem{number: 0, description: "item 5"},
+			Startup: []*ListItem{
+				&ListItem{number: 0, Description: "item 0"},
+				&ListItem{number: 0, Description: "item 1"},
+				&ListItem{number: 0, Description: "item 2"},
+				&ListItem{number: 0, Description: "item 3"},
+				&ListItem{number: 0, Description: "item 4"},
+				&ListItem{number: 0, Description: "item 5"},
 			},
 		}
 		today.Update()
-		for i := 0; i < len(today.startup); i++ {
-			assert.Equal(t, i+1, today.startup[i].number)
-			assert.Equal(t, fmt.Sprintf("item %d", i), today.startup[i].description)
+		for i := 0; i < len(today.Startup); i++ {
+			assert.Equal(t, i+1, today.Startup[i].number)
+			assert.Equal(t, fmt.Sprintf("item %d", i), today.Startup[i].Description)
 		}
 	})
 
 	t.Run("addItem", func(t *testing.T) {
 		today := &Today{
-			startup: []*listItem{
-				&listItem{number: 1, description: "item 0"},
-				&listItem{number: 2, description: "item 1"},
-				&listItem{number: 0, description: "item 2"},
-				&listItem{number: 3, description: "item 3"},
-				&listItem{number: 4, description: "item 4"},
-				&listItem{number: 5, description: "item 5"},
+			Startup: []*ListItem{
+				&ListItem{number: 1, Description: "item 0"},
+				&ListItem{number: 2, Description: "item 1"},
+				&ListItem{number: 0, Description: "item 2"},
+				&ListItem{number: 3, Description: "item 3"},
+				&ListItem{number: 4, Description: "item 4"},
+				&ListItem{number: 5, Description: "item 5"},
 			},
 		}
 		today.Update()
-		for i := 0; i < len(today.startup); i++ {
-			assert.Equal(t, i+1, today.startup[i].number)
-			assert.Equal(t, fmt.Sprintf("item %d", i), today.startup[i].description)
+		for i := 0; i < len(today.Startup); i++ {
+			assert.Equal(t, i+1, today.Startup[i].number)
+			assert.Equal(t, fmt.Sprintf("item %d", i), today.Startup[i].Description)
 		}
 	})
 }
@@ -268,12 +284,12 @@ Another Note
 One More Note
 
 Log:
-[0-9]+:[0-9]{2} - Moved TODO-1 \(Another Task\) to  IN PROGRESS
+[0-9]+:[0-9]{2} - Moved TASK-1 \(Another Task\) to  IN PROGRESS
 
 TODO:
-TODO-0 - Some Task \[\? - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
-TODO-2 - Something else \[\? - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
-TODO-1 - Another Task \[IN PROGRESS - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
+TASK-0 - Some Task \[\? - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
+TASK-2 - Something else \[\? - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
+TASK-1 - Another Task \[IN PROGRESS - [A-Za-z]{3} [0-9]+, [0-9]{4}\]
 `
 
 	assert.Regexp(t, expected, result)

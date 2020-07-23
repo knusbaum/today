@@ -65,7 +65,7 @@ func matchLine(line, match string) bool {
 	return ret
 }
 
-func parseStatus(s string) status {
+func parseStatus(s string) Status {
 	re := regexp.MustCompile(`(([A-Z-? ]*?)([[:space:]]+-[[:space:]]+|$))?(.*?)([[:space:]]+-[[:space:]]+(.*?))?$`)
 	matches := re.FindStringSubmatch(s)
 
@@ -76,33 +76,33 @@ func parseStatus(s string) status {
 	if part3 == "" {
 		if date, err := time.ParseInLocation("Jan _2, 2006", part2, time.Local); err == nil {
 			// part 2 is a date.
-			return status{
-				name: name,
-				date: date,
+			return Status{
+				Name: name,
+				Date: date,
 			}
 		}
-		return status{
-			name:    name,
-			comment: part2 + matches[5],
+		return Status{
+			Name:    name,
+			Comment: part2 + matches[5],
 		}
 	}
 
 	date, err := time.ParseInLocation("Jan _2, 2006", matches[6], time.Local)
 	if err != nil {
-		return status{
-			name:    name,
-			comment: part2 + matches[5],
+		return Status{
+			Name:    name,
+			Comment: part2 + matches[5],
 		}
 	}
-	return status{
-		name:    name,
-		comment: part2,
-		date:    date,
+	return Status{
+		Name:    name,
+		Comment: part2,
+		Date:    date,
 	}
 }
 
-func (p *Parser) parseTodo() *todo {
-	var t todo
+func (p *Parser) parseTodo() *Task {
+	var t Task
 	l, err := p.nextLine()
 	if err != nil {
 		log.Printf("Warning: Unexpected error while parsing todo: %s\n", err)
@@ -115,12 +115,12 @@ func (p *Parser) parseTodo() *todo {
 
 	re := regexp.MustCompile(`^(([A-Z]+-[0-9]+)[[:space:]]+-)?(.*?)(\[([^][]*)\])?$`)
 	matches := re.FindStringSubmatch(l)
-	t.jira = strings.TrimSpace(matches[2])
-	t.description = strings.TrimSpace(matches[3])
-	t.status = parseStatus(strings.TrimSpace(matches[5]))
+	t.Name = strings.TrimSpace(matches[2])
+	t.Description = strings.TrimSpace(matches[3])
+	t.Status = parseStatus(strings.TrimSpace(matches[5]))
 	for l, err := p.nextLine(); err == nil; l, err = p.nextLine() {
 		if strings.HasPrefix(l, "\t") {
-			t.comments = append(t.comments, strings.TrimSpace(l))
+			t.Comments = append(t.Comments, strings.TrimSpace(l))
 		} else if strings.TrimSpace(l) == "" {
 			t.blankBelow = true
 			continue
@@ -132,7 +132,7 @@ func (p *Parser) parseTodo() *todo {
 	return &t
 }
 
-func (p *Parser) parseListItem() *listItem {
+func (p *Parser) parseListItem() *ListItem {
 	l, err := p.nextLine()
 	if err != nil {
 		log.Printf("Warning: Unexpected error while parsing todo: %s\n", err)
@@ -155,11 +155,11 @@ func (p *Parser) parseListItem() *listItem {
 	comment := strings.TrimSpace(matches[3])
 	status := parseStatus(strings.TrimSpace(matches[5]))
 
-	return &listItem{number: itemNumber, description: comment, status: status}
+	return &ListItem{number: itemNumber, Description: comment, Status: status}
 }
 
-func (p *Parser) parseList(nextSection string) []*listItem {
-	var items []*listItem
+func (p *Parser) parseList(nextSection string) []*ListItem {
+	var items []*ListItem
 	for {
 		l, err := p.peekLine()
 		if err != nil || matchLine(l, nextSection) {
@@ -171,18 +171,24 @@ func (p *Parser) parseList(nextSection string) []*listItem {
 	}
 }
 
-func (p *Parser) parseTodos(nextSection string) []*todo {
-	var todos []*todo
+func (p *Parser) parseTodos(nextSection string) TaskList {
+	var todos TaskList
 	for {
 		l, err := p.peekLine()
 		if err != nil || matchLine(l, nextSection) {
-			if len(todos) > 0 {
-				todos[len(todos)-1].blankBelow = false // last todo never gets blank line.
+			if len(todos.tasks) > 0 {
+				todos.tasks[len(todos.tasks)-1].blankBelow = false // last todo never gets blank line.
 			}
 			return todos
 		}
 		if t := p.parseTodo(); t != nil {
-			todos = append(todos, t)
+			todos.tasks = append(todos.tasks, t)
+			if strings.HasPrefix(t.Name, "TASK-") {
+				taskid, err := strconv.Atoi(strings.TrimPrefix(t.Name, "TASK-"))
+				if err == nil && taskid >= todos.nextTaskID {
+					todos.nextTaskID = taskid + 1
+				}
+			}
 		}
 	}
 }
@@ -201,7 +207,7 @@ func (p *Parser) parseLines(nextSection string) []string {
 	}
 }
 
-func (p *Parser) parseStartup() ([]*listItem, error) {
+func (p *Parser) parseStartup() ([]*ListItem, error) {
 	for {
 		l, err := p.nextLine()
 		if err != nil {
@@ -238,11 +244,11 @@ func (p *Parser) parseLog() ([]string, error) {
 	}
 }
 
-func (p *Parser) parseTODO() ([]*todo, error) {
+func (p *Parser) parseTODO() (TaskList, error) {
 	for {
 		l, err := p.nextLine()
 		if err != nil {
-			return nil, err
+			return TaskList{}, err
 		}
 		if matchLine(l, todoLine) {
 			return p.parseTodos("END"), nil
@@ -261,6 +267,7 @@ func NewParser(r io.Reader) *Parser {
 	return &Parser{rdr: rdr}
 }
 
+//Parse returns a *Today, or an error if a *Today could not be parsed.
 func (p *Parser) Parse() (*Today, error) {
 	var t Today
 
@@ -268,34 +275,25 @@ func (p *Parser) Parse() (*Today, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse startup: %s", err)
 	}
-	t.startup = startup
+	t.Startup = startup
 
 	notes, err := p.parseNotes()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse notes: %s", err)
 	}
-	t.notes = notes
+	t.Notes = notes
 
 	log, err := p.parseLog()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse log: %s", err)
 	}
-	t.log = log
+	t.Log = log
 
 	todos, err := p.parseTODO()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse todo: %s", err)
 	}
-	t.todos = todos
-
-	for _, todo := range t.todos {
-		if strings.HasPrefix(todo.jira, "TODO-") {
-			taskid, err := strconv.Atoi(strings.TrimPrefix(todo.jira, "TODO-"))
-			if err == nil && taskid >= t.nextTodo {
-				t.nextTodo = taskid + 1
-			}
-		}
-	}
+	t.Tasks = todos
 
 	return &t, nil
 }

@@ -1,154 +1,134 @@
 package today
 
 import (
-	"fmt"
-	"sort"
 	"time"
 )
 
+// Today represents a today file. A today file contains several
+// sections to help track tasks.
+//
+// A today file contains 4 sections in this order:
+//   1. Startup ("Morning Start Up")
+//   2. Notes ("Notes")
+//   3. Log ("Log")
+//   4. Tasks ("TODO")
+//
+// Each section behaves slightly differently.
+//
+// The "Startup" section contains a list of items that are meant to be undertaken daily,
+// beginning the day. For instance, a morning start up may contain:
+//   1. Catch up on slack
+//   2. Check the calendar
+//   3. Read the inbox
+//   4. look at issue tracker
+//
+// The "Notes" section is a simple sequence of lines that carries over from day to day. It is not
+// emptied by a call to Clear(). Whitespace is eliminated (which may be changed in the future) but
+// no other transformations apply. This is where I dump random notes, shell commands, etc. that I
+// use frequently or want to remember. The whitespace elimination is to try to force notes to be
+// short (single lines). For longer notes, I add the filename of a note file instead.
+//
+// The "Log" section is a sequence of lines similar to "Notes", but this one is cleared by a call
+// to Clear(). Every time Update() applies a Status to a task in the "Tasks" section, a line is
+// added to the "Log" section with a timestamp and a description of the applied status. For
+// example, when Update() notices a task with a new status without a date (e.g. "TASK-123 - Do
+// something important [DONE - Finished up]"), It Makes an entry in the log like so:
+//   4:48 - Moved TASK-123 (Do something important) to DONE (Finished up)
+// I also add my own timestamped entries to the Log when I want to record some important event.
+//
+// The "Tasks" section is the most complicated section. It is a sequence of tasks that have
+// Statuses and optional comments. See TaskList for details.
 type Today struct {
-	startup  []*listItem
-	notes    []string
-	log      []string
-	todos    []*todo
-	nextTodo int
+	Startup List
+	Notes   Lines
+	Log     Lines
+	Tasks   TaskList
 }
 
-type status struct {
-	name    string
-	comment string
-	date    time.Time
+// Status describes the current status of a ListItem or Task. A status has a Name, which should be
+// an string of capital letters and spaces. Each status also has a Comment field, and a Date.
+//
+// In its most basic text form, a Status is just a status name inside square brackets. A status
+// name is a series of capitalized letters. A basic status might be "[IN PROGRESS]".
+//
+// Comments come after the status name, separated by space and a hyphen, and can be any string of
+// text: "[IN PROGRESS - Working on pr #12]".
+//
+// Dates follow the status name and the comment if one is present, again separated by space and
+// hyphen. Dates must follow the format (given in Go's time.Format
+// (https://golang.org/pkg/time/#Time.Format) notation) "Jan _2, 2006" or they will be considered
+// part of the comment. Both of these are valid statuses with dates:
+//   [IN PROGRESS - Working on pr #12 - Jan 16, 2020]
+//   [READY - Jan 14, 2020]
+type Status struct {
+	Name    string
+	Comment string
+	Date    time.Time
 }
 
-type todo struct {
-	jira        string
-	description string
-	status      status
-	comments    []string
-	blankBelow  bool
-}
-
-type listItem struct {
+// ListItem represents one line of a List. Lists are ordered and have a Description and optional Status.
+type ListItem struct {
 	number      int
-	description string
-	status      status
+	Description string
+	Status      Status
 }
 
-// updateStartup makes sure that every startup item is numbered according
-// to it's place in the startup list.
-func (t *Today) updateStartup() {
-	for i, item := range t.startup {
+// Lines is a Section containing an arbitrary sequence of lines. When parsing, whitespace is
+// eliminated (which may be changed in the future) but no other transformations apply. The
+// whitespace elimination is to try to force entries in these sections to be short (single lines).
+//
+// Lines is used for both the Notes and Log sections, although each of those sections has slightly
+// different behavior.
+type Lines []string
+
+// Add adds a line to a Lines. s should not contain newline characters.
+func (l *Lines) Add(s string) {
+	*l = append(*l, s)
+}
+
+// List is a Section containing an ordered list of items. Each ListItem represents one line of a
+// list. ListItems are given numbers from 1 to len(list). A ListItem's number must be the first
+// thing on the line. It is some number of digits followed by a period.
+type List []*ListItem
+
+// Update makes sure that every startup item is numbered according to it's place in the startup
+// list. It will assign numbers to mis-numbered and un-numbered items. For instance, a list
+// containing:
+//   3. Check the calendar
+//   Catch up on slack
+//   Read the inbox
+//   look at ticket tracker
+// will be re-numbered to:
+//   1. Check the calendar
+//   2. Catch up on slack
+//   3. Read the inbox
+//   4. look at ticket tracker
+func (l List) Update() {
+	for i, item := range l {
 		item.number = i + 1
 	}
 }
 
-// updateTodos adds dates and statuses to any todos without them.
-func (t *Today) updateTodos() {
-	for _, todo := range t.todos {
-		if todo.jira == "" {
-			todo.jira = fmt.Sprintf("TODO-%d", t.nextTodo)
-			t.nextTodo++
-		}
-		if todo.status.date.IsZero() {
-			todo.status.date = time.Now()
-			timestr := time.Now().Format("3:04")
-			if !todo.status.isUnknown() {
-				if todo.status.comment != "" {
-					t.log = append(t.log, fmt.Sprintf("%s - Moved %s (%s) to %s (%s)", timestr, todo.jira, todo.description, todo.status.name, todo.status.comment))
-				} else {
-					t.log = append(t.log, fmt.Sprintf("%s - Moved %s (%s) to  %s", timestr, todo.jira, todo.description, todo.status.name))
-				}
-			}
-		}
-		if todo.status.name == "" {
-			todo.status.name = "?"
-		}
-	}
-}
-
+// Update makes sure items in Startup are numbered correctly, and applies statuses to un-statused
+// items in the Tasks section. (See TaskList.Update and List.Update)
 func (t *Today) Update() {
-	t.updateStartup()
-	t.updateTodos()
+	t.Startup.Update()
+	t.Tasks.Update(&t.Log)
 }
 
-var priorityOrder map[string]int = map[string]int{
-	"":            0,
-	"?":           0,
-	"OTHER":       0, // Other (not in this list)
-	"IN PROGRESS": 1,
-	"IN-PROGRESS": 1,
-	"INPROGRESS":  1,
-	"READY":       2,
-	"REVIEW":      4,
-	"WAITING":     5,
-	"RESPONDED":   5,
-	"STALE":       6,
-	"HOLD":        7,
-	"DONE":        8,
-}
-
-func (s *status) isUnknown() bool {
-	return s.name == "" || s.name == "?"
-}
-
-func priority(s *status) int {
-	// Tasks marked "HOLD" should be held until the specified date.
-	if s.name == "HOLD" && time.Now().After(s.date) {
-		return 0
-	}
-
-	// Tasks waiting or in review should be checked again after a day.
-	if (s.name == "WAITING" || s.name == "REVIEW" || s.name == "RESPONDED") &&
-		time.Now().After(s.date.Add(24*time.Hour)) {
-		return 0
-	}
-
-	// Check up on stale tasks once per week
-	if s.name == "STALE" && time.Now().After(s.date.Add(24*7*time.Hour)) {
-		return 0
-	}
-
-	v, ok := priorityOrder[s.name]
-	if !ok {
-		return priorityOrder["OTHER"]
-	}
-	return v
-}
-
-type byPriority []*todo
-
-func (a byPriority) Len() int      { return len(a) }
-func (a byPriority) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a byPriority) Less(i, j int) bool {
-	pi := priority(&a[i].status)
-	pj := priority(&a[j].status)
-	if pi == pj {
-		return a[i].status.date.Before(a[j].status.date)
-	}
-	return pi < pj
-}
-
+// Sort sorts the Tasks section (See Tasks.Sort)
 func (t *Today) Sort() {
-	if len(t.todos) == 0 {
-		return
-	}
-	sort.Stable(byPriority(t.todos))
+	t.Tasks.Sort()
 }
 
+// Clear clears statuses from the Startup section, and eliminates "DONE" tasks from the Tasks
+// section. (See Tasks.Clear)
 func (t *Today) Clear() {
-	k := 0
-	for i := 0; i < len(t.todos); {
-		if t.todos[i].status.name != "DONE" {
-			t.todos[k] = t.todos[i]
-			k++
-		}
-		i++
-	}
-	t.todos = t.todos[:k]
+	t.Tasks.Clear()
 
 	// Eliminate status from startup items
-	for _, item := range t.startup {
-		item.status = status{}
+	for _, item := range t.Startup {
+		item.Status = Status{}
 	}
-	t.log = make([]string, 0)
+	t.Log = make([]string, 0)
 }
