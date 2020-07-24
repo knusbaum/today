@@ -16,7 +16,7 @@ func TestClear(t *testing.T) {
 		now := time.Now()
 		today := &Today{
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					&Task{Description: "should not exist", Status: Status{Name: "DONE", Date: now}},
 					&Task{Description: "task 0", Status: Status{Name: "?", Date: now}},
 					&Task{Description: "task 1", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
@@ -26,16 +26,16 @@ func TestClear(t *testing.T) {
 			},
 		}
 		today.Clear()
-		assert.Len(t, today.Tasks.tasks, 3)
-		for i := 0; i < len(today.Tasks.tasks); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
+		assert.Len(t, today.Tasks.Tasks, 3)
+		for i := 0; i < len(today.Tasks.Tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.Tasks[i].Description)
 		}
 	})
 	t.Run("same", func(t *testing.T) {
 		now := time.Now()
 		today := &Today{
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					&Task{Description: "task 0", Status: Status{Name: "", Date: now}},
 					&Task{Description: "task 1", Status: Status{Name: "?", Date: now}},
 					&Task{Description: "task 2", Status: Status{Name: "SOMEUNKNOWNSTATUS", Date: now}},
@@ -45,9 +45,9 @@ func TestClear(t *testing.T) {
 			},
 		}
 		today.Clear()
-		assert.Len(t, today.Tasks.tasks, 5)
-		for i := 0; i < len(today.Tasks.tasks); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
+		assert.Len(t, today.Tasks.Tasks, 5)
+		for i := 0; i < len(today.Tasks.Tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.Tasks[i].Description)
 		}
 	})
 }
@@ -57,7 +57,7 @@ func TestSortTodos(t *testing.T) {
 		now := time.Now()
 		today := &Today{
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					&Task{Description: "task 3", Status: Status{Name: "IN PROGRESS", Date: now}},
 					&Task{Description: "task 9", Status: Status{Name: "STALE", Date: now}},
 					&Task{Description: "task 7", Status: Status{Name: "WAITING", Date: now}},
@@ -74,8 +74,8 @@ func TestSortTodos(t *testing.T) {
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.Tasks.tasks); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
+		for i := 0; i < len(today.Tasks.Tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.Tasks[i].Description)
 		}
 	})
 
@@ -83,7 +83,7 @@ func TestSortTodos(t *testing.T) {
 		now := time.Now()
 		today := &Today{
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					&Task{Description: "task 14", Status: Status{Name: "DONE", Date: now}},
 					&Task{Description: "task 13", Status: Status{Name: "HOLD", Date: now.Add(48 * time.Hour)}},
 					&Task{Description: "task 12", Status: Status{Name: "STALE", Date: now}},
@@ -105,12 +105,12 @@ func TestSortTodos(t *testing.T) {
 		// Unlike the other tests, which depend on the sort being stable (which is by design), this set of todos has an absolute order, so
 		// we can shuffle the list before we sort.
 		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(today.Tasks.tasks), func(i, j int) {
-			today.Tasks.tasks[i], today.Tasks.tasks[j] = today.Tasks.tasks[j], today.Tasks.tasks[i]
+		rand.Shuffle(len(today.Tasks.Tasks), func(i, j int) {
+			today.Tasks.Tasks[i], today.Tasks.Tasks[j] = today.Tasks.Tasks[j], today.Tasks.Tasks[i]
 		})
 		today.Sort()
-		for i := 0; i < len(today.Tasks.tasks); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
+		for i := 0; i < len(today.Tasks.Tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.Tasks[i].Description)
 		}
 	})
 
@@ -118,7 +118,7 @@ func TestSortTodos(t *testing.T) {
 		now := time.Now()
 		today := &Today{
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					&Task{Description: "task 4", Status: Status{Name: "IN PROGRESS", Date: now}},
 					&Task{Description: "task 10", Status: Status{Name: "STALE", Date: now}},
 					&Task{Description: "task 8", Status: Status{Name: "WAITING", Date: now}},
@@ -135,8 +135,8 @@ func TestSortTodos(t *testing.T) {
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.Tasks.tasks); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
+		for i := 0; i < len(today.Tasks.Tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.Tasks[i].Description)
 		}
 	})
 
@@ -144,7 +144,7 @@ func TestSortTodos(t *testing.T) {
 		now := time.Now()
 		today := &Today{
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					// 0, 1, 2 have same priority as 3, 4, 5 but always come first because their date is earlier.
 					&Task{Description: "task 10", Status: Status{Name: "HOLD", Date: now.Add(48 * time.Hour)}},
 					&Task{Description: "task 6", Status: Status{Name: "IN PROGRESS", Date: now}},
@@ -162,8 +162,8 @@ func TestSortTodos(t *testing.T) {
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.Tasks.tasks); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
+		for i := 0; i < len(today.Tasks.Tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.Tasks[i].Description)
 		}
 	})
 
@@ -171,7 +171,7 @@ func TestSortTodos(t *testing.T) {
 		now := time.Now()
 		today := &Today{
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					&Task{Description: "task 0", Status: Status{Name: "STALE", Date: now.Add(-24 * 7 * time.Hour)}},
 					&Task{Description: "task 7", Status: Status{Name: "REVIEW", Date: now}},
 					&Task{Description: "task 1", Status: Status{Date: now}},
@@ -188,8 +188,8 @@ func TestSortTodos(t *testing.T) {
 			},
 		}
 		today.Sort()
-		for i := 0; i < len(today.Tasks.tasks); i++ {
-			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.tasks[i].Description)
+		for i := 0; i < len(today.Tasks.Tasks); i++ {
+			assert.Equal(t, fmt.Sprintf("task %d", i), today.Tasks.Tasks[i].Description)
 		}
 	})
 }
@@ -261,8 +261,7 @@ Something else
 `
 
 	r := strings.NewReader(todayText)
-	p := NewParser(r)
-	td, err := p.Parse()
+	td, err := Parse(r)
 	if !assert.NoError(t, err) {
 		return
 	}

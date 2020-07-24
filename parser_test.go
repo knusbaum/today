@@ -30,8 +30,7 @@ Log:
 TODO:
 
 `)
-	p := NewParser(r)
-	today, err := p.Parse()
+	today, err := Parse(r)
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
@@ -77,8 +76,7 @@ Log:
 TODO:
 
 `)
-	p := NewParser(r)
-	today, err := p.Parse()
+	today, err := Parse(r)
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
@@ -104,8 +102,7 @@ Log:
 
 TODO:
 `)
-	p := NewParser(r)
-	today, err := p.Parse()
+	today, err := Parse(r)
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
@@ -134,38 +131,37 @@ SOMEJIRA-1234 - Do something for this jira. [IN-PROGRESS]
 TASK-240 - Another Task [WAITING - waiting to hear from client multi-hyphen-word - Jan 5, 2020]
 Yet another task.
 `)
-	p := NewParser(r)
-	today, err := p.Parse()
+	today, err := Parse(r)
 	assert.NoError(t, err)
 	if !assert.NotNil(t, today) {
 		return
 	}
 
-	if !assert.Len(t, today.Tasks.tasks, 3) {
+	if !assert.Len(t, today.Tasks.Tasks, 3) {
 		return
 	}
 
-	assert.Equal(t, "SOMEJIRA-1234", today.Tasks.tasks[0].Name)
-	assert.Equal(t, "Do something for this jira.", today.Tasks.tasks[0].Description)
-	assert.Equal(t, "IN-PROGRESS", today.Tasks.tasks[0].Status.Name)
-	if !assert.Len(t, today.Tasks.tasks[0].Comments, 2) {
+	assert.Equal(t, "SOMEJIRA-1234", today.Tasks.Tasks[0].Name)
+	assert.Equal(t, "Do something for this jira.", today.Tasks.Tasks[0].Description)
+	assert.Equal(t, "IN-PROGRESS", today.Tasks.Tasks[0].Status.Name)
+	if !assert.Len(t, today.Tasks.Tasks[0].Comments, 2) {
 		return
 	}
-	assert.Equal(t, "* Some note.", today.Tasks.tasks[0].Comments[0])
-	assert.Equal(t, "* Some other note.", today.Tasks.tasks[0].Comments[1])
+	assert.Equal(t, "* Some note.", today.Tasks.Tasks[0].Comments[0])
+	assert.Equal(t, "* Some other note.", today.Tasks.Tasks[0].Comments[1])
 
-	assert.Equal(t, "TASK-240", today.Tasks.tasks[1].Name)
-	assert.Equal(t, "Another Task", today.Tasks.tasks[1].Description)
-	assert.Equal(t, "WAITING", today.Tasks.tasks[1].Status.Name)
-	assert.Equal(t, "waiting to hear from client multi-hyphen-word", today.Tasks.tasks[1].Status.Comment)
-	assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), today.Tasks.tasks[1].Status.Date)
+	assert.Equal(t, "TASK-240", today.Tasks.Tasks[1].Name)
+	assert.Equal(t, "Another Task", today.Tasks.Tasks[1].Description)
+	assert.Equal(t, "WAITING", today.Tasks.Tasks[1].Status.Name)
+	assert.Equal(t, "waiting to hear from client multi-hyphen-word", today.Tasks.Tasks[1].Status.Comment)
+	assert.Equal(t, time.Date(2020, 1, 5, 0, 0, 0, 0, time.Local), today.Tasks.Tasks[1].Status.Date)
 	assert.Equal(t, 241, today.Tasks.nextTaskID)
 
-	assert.Equal(t, "", today.Tasks.tasks[2].Name)
-	assert.Equal(t, "Yet another task.", today.Tasks.tasks[2].Description)
-	assert.Equal(t, "", today.Tasks.tasks[2].Status.Name)
-	assert.Equal(t, "", today.Tasks.tasks[2].Status.Comment)
-	assert.True(t, today.Tasks.tasks[2].Status.Date.IsZero())
+	assert.Equal(t, "", today.Tasks.Tasks[2].Name)
+	assert.Equal(t, "Yet another task.", today.Tasks.Tasks[2].Description)
+	assert.Equal(t, "", today.Tasks.Tasks[2].Status.Name)
+	assert.Equal(t, "", today.Tasks.Tasks[2].Status.Comment)
+	assert.True(t, today.Tasks.Tasks[2].Status.Date.IsZero())
 }
 
 func TestParseStatus(t *testing.T) {
@@ -200,7 +196,7 @@ func TestParseStatus(t *testing.T) {
 		assert.Equal(t, "waiting to hear from client multi-hyphen-word - Jan 335, 2020", s.Comment)
 	})
 	t.Run("comment-brackets", func(t *testing.T) {
-		p := NewParser(strings.NewReader("JIRAPROJECT-123 - [Client X] - Can't frobnicate the blips  [STALE - Jun 10, 2020]\n"))
+		p := newParser(strings.NewReader("JIRAPROJECT-123 - [Client X] - Can't frobnicate the blips  [STALE - Jun 10, 2020]\n"))
 		todo := p.parseTodo()
 		assert.Equal(t, "JIRAPROJECT-123", todo.Name)
 		assert.Equal(t, "[Client X] - Can't frobnicate the blips", todo.Description)
@@ -220,7 +216,7 @@ one more line
 END
 more lines
 `)
-	p := NewParser(r)
+	p := newParser(r)
 	lines := p.parseLines("END")
 	assert.Equal(t,
 		[]string{

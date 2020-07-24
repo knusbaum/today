@@ -11,8 +11,7 @@ import (
 	"time"
 )
 
-// Parser parses a today file
-type Parser struct {
+type parser struct {
 	rdr   *bufio.Reader
 	peekp bool
 	peek  string
@@ -25,7 +24,7 @@ const (
 	todoLine    = "TODO:"
 )
 
-func (p *Parser) peekLine() (string, error) {
+func (p *parser) peekLine() (string, error) {
 	if p.peekp {
 		return p.peek, nil
 	}
@@ -38,7 +37,7 @@ func (p *Parser) peekLine() (string, error) {
 	return p.peek, err
 }
 
-func (p *Parser) nextLine() (string, error) {
+func (p *parser) nextLine() (string, error) {
 	if p.peekp {
 		r := p.peek
 		p.peek = ""
@@ -52,7 +51,7 @@ func (p *Parser) nextLine() (string, error) {
 	return str, err
 }
 
-func (p *Parser) ungetLine(l string) {
+func (p *parser) ungetLine(l string) {
 	if p.peekp {
 		panic("Cannot unget more than one line.")
 	}
@@ -101,7 +100,7 @@ func parseStatus(s string) Status {
 	}
 }
 
-func (p *Parser) parseTodo() *Task {
+func (p *parser) parseTodo() *Task {
 	var t Task
 	l, err := p.nextLine()
 	if err != nil {
@@ -132,7 +131,7 @@ func (p *Parser) parseTodo() *Task {
 	return &t
 }
 
-func (p *Parser) parseListItem() *ListItem {
+func (p *parser) parseListItem() *ListItem {
 	l, err := p.nextLine()
 	if err != nil {
 		log.Printf("Warning: Unexpected error while parsing todo: %s\n", err)
@@ -158,7 +157,7 @@ func (p *Parser) parseListItem() *ListItem {
 	return &ListItem{number: itemNumber, Description: comment, Status: status}
 }
 
-func (p *Parser) parseList(nextSection string) []*ListItem {
+func (p *parser) parseList(nextSection string) []*ListItem {
 	var items []*ListItem
 	for {
 		l, err := p.peekLine()
@@ -171,18 +170,18 @@ func (p *Parser) parseList(nextSection string) []*ListItem {
 	}
 }
 
-func (p *Parser) parseTodos(nextSection string) TaskList {
+func (p *parser) parseTodos(nextSection string) TaskList {
 	var todos TaskList
 	for {
 		l, err := p.peekLine()
 		if err != nil || matchLine(l, nextSection) {
-			if len(todos.tasks) > 0 {
-				todos.tasks[len(todos.tasks)-1].blankBelow = false // last todo never gets blank line.
+			if len(todos.Tasks) > 0 {
+				todos.Tasks[len(todos.Tasks)-1].blankBelow = false // last todo never gets blank line.
 			}
 			return todos
 		}
 		if t := p.parseTodo(); t != nil {
-			todos.tasks = append(todos.tasks, t)
+			todos.Tasks = append(todos.Tasks, t)
 			if strings.HasPrefix(t.Name, "TASK-") {
 				taskid, err := strconv.Atoi(strings.TrimPrefix(t.Name, "TASK-"))
 				if err == nil && taskid >= todos.nextTaskID {
@@ -193,7 +192,7 @@ func (p *Parser) parseTodos(nextSection string) TaskList {
 	}
 }
 
-func (p *Parser) parseLines(nextSection string) []string {
+func (p *parser) parseLines(nextSection string) []string {
 	var lines []string
 	for {
 		l, err := p.peekLine()
@@ -207,7 +206,7 @@ func (p *Parser) parseLines(nextSection string) []string {
 	}
 }
 
-func (p *Parser) parseStartup() ([]*ListItem, error) {
+func (p *parser) parseStartup() ([]*ListItem, error) {
 	for {
 		l, err := p.nextLine()
 		if err != nil {
@@ -220,7 +219,7 @@ func (p *Parser) parseStartup() ([]*ListItem, error) {
 	}
 }
 
-func (p *Parser) parseNotes() ([]string, error) {
+func (p *parser) parseNotes() ([]string, error) {
 	for {
 		l, err := p.nextLine()
 		if err != nil {
@@ -232,7 +231,7 @@ func (p *Parser) parseNotes() ([]string, error) {
 	}
 }
 
-func (p *Parser) parseLog() ([]string, error) {
+func (p *parser) parseLog() ([]string, error) {
 	for {
 		l, err := p.nextLine()
 		if err != nil {
@@ -244,7 +243,7 @@ func (p *Parser) parseLog() ([]string, error) {
 	}
 }
 
-func (p *Parser) parseTODO() (TaskList, error) {
+func (p *parser) parseTODO() (TaskList, error) {
 	for {
 		l, err := p.nextLine()
 		if err != nil {
@@ -257,18 +256,17 @@ func (p *Parser) parseTODO() (TaskList, error) {
 }
 
 // NewParser will create a new
-func NewParser(r io.Reader) *Parser {
+func newParser(r io.Reader) *parser {
 	var rdr *bufio.Reader
 	if br, ok := r.(*bufio.Reader); ok {
 		rdr = br
 	} else {
 		rdr = bufio.NewReader(r)
 	}
-	return &Parser{rdr: rdr}
+	return &parser{rdr: rdr}
 }
 
-//Parse returns a *Today, or an error if a *Today could not be parsed.
-func (p *Parser) Parse() (*Today, error) {
+func (p *parser) parse() (*Today, error) {
 	var t Today
 
 	startup, err := p.parseStartup()
@@ -296,4 +294,10 @@ func (p *Parser) Parse() (*Today, error) {
 	t.Tasks = todos
 
 	return &t, nil
+}
+
+// Parse attempts to parse a *Today, from r. It returns an error if a *Today
+// could not be parsed.
+func Parse(r io.Reader) (*Today, error) {
+	return newParser(r).parse()
 }

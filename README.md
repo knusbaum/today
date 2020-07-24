@@ -1,77 +1,162 @@
 # today
-
 [![Semaphore Unit Tests](https://knusbaum.semaphoreci.com/badges/today.svg)](https://knusbaum.semaphoreci.com/branches/29f4d916-1283-46fd-a311-81f74182a4c2)
 
-Today is a simple program for tracking daily tasks using a plain-text task
-list. This was developed to help me specifically with my workflow, so is fairly
-rigid in its structure.
+`import "github.com/knusbaum/today"`
+* [Overview](#pkg-overview)
+* [Index](#pkg-index)
+* [Subdirectories](#pkg-subdirectories)
+## <a name="pkg-overview">Overview</a>
+Package today provides tools for manipulating a plain-text task list. This was developed to help
+me specifically with my workflow. The package manages "today files" which contain several
+sections. Each section has slightly different structure and different rules about how it is
+updated, sorted, etc. The today package is primarily intended to be used by the today program in
+package github.com/knusbaum/today/today.
 
+## <a name="pkg-index">Index</a>
 
-## Today Files
-The `today` program operates on "today files". A today file contains several
-sections to help track tasks.
-
-A today file contains 4 sections:
-1. Morning Start Up
-2. Notes
-3. Log
-4. TODO
-
-Each section behaves slightly differently. 
-
-### Morning Start Up
-This section contains a list of items that are meant to be undertaken daily,
-beginning the day. For instance, a morning start up may contain:
+* [type Lines](#Lines)
+  * [func (l *Lines) Add(s string)](#Lines.Add)
+* [type List](#List)
+  * [func (l List) Update()](#List.Update)
+* [type ListItem](#ListItem)
+* [type Status](#Status)
+* [type Task](#Task)
+* [type TaskList](#TaskList)
+  * [func (t *TaskList) Clear()](#TaskList.Clear)
+  * [func (t *TaskList) Sort()](#TaskList.Sort)
+  * [func (t *TaskList) Update(log *Lines)](#TaskList.Update)
+  * [func (t *TaskList) Write(w *bufio.Writer) error](#TaskList.Write)
+* [type Today](#Today)
+  * [func Parse(r io.Reader) (*Today, error)](#Parse)
+  * [func (t *Today) Clear()](#Today.Clear)
+  * [func (t *Today) Sort()](#Today.Sort)
+  * [func (t *Today) Update()](#Today.Update)
+  * [func (t *Today) Write(w io.Writer) error](#Today.Write)
+#### <a name="pkg-files">Package files</a>
+[doc.go](https://github.com/knusbaum/today/blob/master/doc.go) [parser.go](https://github.com/knusbaum/today/blob/master/parser.go) [task_list.go](https://github.com/knusbaum/today/blob/master/task_list.go) [today.go](https://github.com/knusbaum/today/blob/master/today.go) [writer.go](https://github.com/knusbaum/today/blob/master/writer.go) 
+## <a name="Lines">type</a> [Lines](https://github.com/knusbaum/today/blob/master/today.go#L87)
+```go
+type Lines []string
 ```
-1. Catch up on slack
-2. Check the calendar
+
+Lines is a Section containing an arbitrary sequence of lines. When parsing, whitespace is
+eliminated (which may be changed in the future) but no other transformations apply. The
+whitespace elimination is to try to force entries in these sections to be short (single lines).
+
+Lines is used for both the Notes and Log sections, although each of those sections has slightly
+different behavior.
+
+### <a name="Lines.Add">func</a> (\*Lines) [Add](https://github.com/knusbaum/today/blob/master/today.go#L90)
+```go
+func (l *Lines) Add(s string)
+```
+
+Add adds a line to a Lines. s should not contain newline characters.
+
+## <a name="List">type</a> [List](https://github.com/knusbaum/today/blob/master/today.go#L97)
+```go
+type List []*ListItem
+```
+
+List is a Section containing an ordered list of items. Each ListItem represents one line of a
+list. ListItems are given numbers from 1 to len(list). A ListItem's number must be the first
+thing on the line. It is some number of digits followed by a period.
+
+### <a name="List.Update">func</a> (List) [Update](https://github.com/knusbaum/today/blob/master/today.go#L111)
+```go
+func (l List) Update()
+```
+
+Update makes sure that every startup item is numbered according to it's place in the startup
+list. It will assign numbers to mis-numbered and un-numbered items. For instance, a list
+containing:
+
+```
+3. Check the calendar
+Catch up on slack
+Read the inbox
+look at ticket tracker
+```
+
+will be re-numbered to:
+
+```
+1. Check the calendar
+2. Catch up on slack
 3. Read the inbox
-4. look at Jira 
+4. look at ticket tracker
 ```
 
-Each item in `Morning Start Up` can be marked with a [`Status`](#status) which
-will be cleared during [Generation](#generation) for the following day. This
-helps you ensure you are completing your daily tasks, and identify tasks that
-are getting left behind.
-
-### Notes
-Notes is a simple sequence of lines that carries over from day to day.
-Whitespace is eliminated (which may be changed in the future) but no other
-transformations apply. This is where I dump random notes, shell commands, etc.
-that I use frequently or want to remember.
-
-The whitespace elimination is to try to force notes to be short (single lines).
-For longer notes, I add the filename of a note file instead.
-
-### Log
-Log is a sequence of lines similar to [Notes](#notes), but this one is cleared
-during [Generation](#generation). Every time a [`Status`](#status) is applied
-to a task in the [TODO](#todo) section, a line is added to the Log section with
-a timestamp describing what status was applied.
-
-For example, when `today` notices a task with a new status (e.g. `TASK-123 - Do
-something important [DONE - Finished up]`), It Makes an entry in the log like
-so:
-```
-4:48 - Moved TASK-123 (Do something important) to DONE (Finished up)
+## <a name="ListItem">type</a> [ListItem](https://github.com/knusbaum/today/blob/master/today.go#L75)
+```go
+type ListItem struct {
+    Description string
+    Status      Status
+    // contains filtered or unexported fields
+}
 ```
 
-I also add my own timestamped entries to the Log when I want to record some
-important event.
+ListItem represents one line of a List. Lists are ordered and have a Description and optional Status.
 
-### TODO
-TODO is the most complicated section. It is a sequence of tasks that have
-[`Status`](#status)es and optional comments.
+## <a name="Status">type</a> [Status](https://github.com/knusbaum/today/blob/master/today.go#L68)
+```go
+type Status struct {
+    Name    string
+    Comment string
+    Date    time.Time
+}
+```
 
+Status describes the current status of a ListItem or Task. A status has a Name, which should be
+an string of capital letters and spaces. Each status also has a Comment field, and a Date.
 
-#### Task Structure
+In its most basic text form, a Status is just a status name inside square brackets. A status
+name is a series of capitalized letters. A basic status might be "[IN PROGRESS]".
+
+Comments come after the status name, separated by space and a hyphen, and can be any string of
+text: "[IN PROGRESS - Working on pr #12]".
+
+Dates follow the status name and the comment if one is present, again separated by space and
+hyphen. Dates must follow the format (given in Go's time.Format
+(<a href="https://golang.org/pkg/time/#Time.Format">https://golang.org/pkg/time/#Time.Format</a>) notation) "Jan _2, 2006" or they will be considered
+part of the comment. Both of these are valid statuses with dates:
+
+```
+[IN PROGRESS - Working on pr #12 - Jan 16, 2020]
+[READY - Jan 14, 2020]
+```
+
+## <a name="Task">type</a> [Task](https://github.com/knusbaum/today/blob/master/task_list.go#L49)
+```go
+type Task struct {
+    Name        string
+    Description string
+    Status      Status
+    Comments    []string
+    // contains filtered or unexported fields
+}
+```
+
+A Task is a structure representing a task.
+A Task in a today file may look like this:
+
+```
+TASK-1 - Description [STATUS NAME - Status.Comment - Status.Date]
+	Comment 1
+	Comment 2
+```
+
+Name must be an all-caps sequence followed by a hyphen and a number. In other words, it must
+match the regex: `[A-Z]+-[0-9]+`
+
 In its most basic form, a task is a single line of text describing the task:
+
 ```
 Do something important
 ```
 
-When `today` reads such a task, it gives it a name like `TASK-1`, and an empty
-[`Status`](#status) with the current day's date:
+When such a task is parsed, it is given a name like "TASK-1", and an empty
+Status with the current day's date:
 
 ```
 TASK-1 - Do something important [? - Jul 22, 2020]
@@ -82,10 +167,10 @@ matches the regex `[A-Z]+-[0-9]+`. This allows you to use jira ids as task
 names. This may change in the future, as jira is by no means the only task
 tracking system, just the one I regularly use.
 
-#### Comments
-A task may have any number of comments beneath it. A comment is a line that
+A Task may have any number of comments beneath it. A comment is a line that
 begins with a tab (`\t`) character. Blank lines are allowed between tasks and
-their comments, but will be eliminated by `today`.
+their comments, but will be eliminated when writing a TaskList:
+
 ```
 Do something important
 	step 1
@@ -94,7 +179,9 @@ Do something important
 
 	step 3
 ```
+
 will become:
+
 ```
 TASK-1 - Do something important [? - Jul 22, 2020]
 	step 1
@@ -102,118 +189,176 @@ TASK-1 - Do something important [? - Jul 22, 2020]
 	step 3
 ```
 
-#### Sorting
-`today` sorts tasks by their [`Status`](#status) and date. The goal is to
-always have a list of tasks sorted by priority. Tasks are sorted by
-[`Status`](#status) name in the following order:
+## <a name="TaskList">type</a> [TaskList](https://github.com/knusbaum/today/blob/master/task_list.go#L10)
+```go
+type TaskList struct {
+    Tasks []*Task
+    // contains filtered or unexported fields
+}
+```
+
+TaskList represents a list of Tasks.
+
+### <a name="TaskList.Clear">func</a> (\*TaskList) [Clear](https://github.com/knusbaum/today/blob/master/task_list.go#L127)
+```go
+func (t *TaskList) Clear()
+```
+
+Clear removes all items with Status.Name == "DONE" from the TaskList
+
+### <a name="TaskList.Sort">func</a> (\*TaskList) [Sort](https://github.com/knusbaum/today/blob/master/task_list.go#L119)
+```go
+func (t *TaskList) Sort()
+```
+
+Sort sorts a TaskList according to the statuses of the tasks. The goal is to always have a
+TaskList sorted by priority. Tasks are sorted by Status name in the following order:
 
 ```
-<blank>       
-"?"
-<other statuses not in this list>
-"IN PROGRESS"
-"IN-PROGRESS"
-"INPROGRESS"
-"READY"
-"REVIEW"
-"WAITING"
-"RESPONDED"
+ <blank>
+ "?"
+ <other statuses not in this list>
+ "IN PROGRESS"
+ "IN-PROGRESS"
+ "INPROGRESS"
+ "READY"
+ "REVIEW"
+ "WAITING"
+ "RESPONDED"
 "STALE"
-"HOLD"
-"DONE"
+ "HOLD"
+ "DONE"
 ```
 
-Tasks with the same [`Status`](#status) are sorted by date, oldest first.
+Tasks with the same Status are sorted by date, oldest first.
 
-Tasks with no status or unknown status are first, the idea being they should be
-given one of the existing, known statuses.
+Tasks with no status or unknown status are first, the idea being they should be given one of the
+existing, known statuses.
 
-`"IN PROGRESS"` and variations of that follow. In progress tasks should always be
-at the top of my list.
+"IN PROGRESS" and variations of that follow. In progress tasks should always be at the top of my
+list.
 
-`"READY"` tasks are next. When I'm through working on an `"IN PROGRESS"` task, I
-pick up a new `"READY"` task.
+"READY" tasks are next. When I'm through working on an "IN PROGRESS" task, I pick up a new
+"READY" task.
 
-Then are `"REVIEW"`, `"WAITING"`, `"RESPONDED"`, and `"STALE"` tasks. These are
-tasks which cannot be actively worked on, but which I am tracking. The sorting
-rules push these to the top periodically to make sure I don't forget about them
-(See the sorting exceptions below)
+Then are "REVIEW", "WAITING", "RESPONDED", and "STALE" tasks. These are tasks which cannot be
+actively worked on, but which I am tracking. The sorting rules push these to the top
+periodically to make sure I don't forget about them (See the sorting exceptions below)
 
-`"HOLD"` tasks are next. They are a notable exception to the normal status format
-since tasks in `"HOLD"` status have a date in the future. Once that date arrives,
-`"HOLD"` tasks are moved to the top of the list. This allows me to put off a task
-until a specific date.
+"HOLD" tasks are next. They are a notable exception to the normal status format since tasks in
+"HOLD" status have a date in the future. Once that date arrives, "HOLD" tasks are moved to the
+top of the list. This allows me to put off a task until a specific date.
 
-`"DONE"` tasks are last. They should include the final status for the task, and
-are put at the bottom to keep a record of how and when a task was completed.
-They are cleared during [Generation](#generation)
+"DONE" tasks are last. They should include the final status for the task, and are put at the
+bottom to keep a record of how and when a task was completed. They are cleared by Clear()
 
-
-##### Sorting Exceptions
-Some useful exceptions to the ordering are:
-* Tasks marked `"HOLD"` with today's date or a date in the past are sent to the
-  top. This allows me to mark a task as HOLD, at which point it will be sent to
-  the bottom of the list, until a particular date when it will rise to the top of
-  the list to get my attention.
-* Tasks marked `"WAITING"`, `"REVIEW"` or `"RESPONDED"` with yesterday's date or
-  older will be sent to the top. This allows me to mark a task with any of these
-  statuses and have it sent to the bottom of the list, and pop back to the top
-  the next day so I can check them again. I use this for PR's which need to be
-  reviewed over-night and other tasks I need to wait until the following day to
-  check up on.
-* Tasks marked `"STALE"` with a date 7 days or more in the past will be sent to
-  the top. I use this to periodically check up on slow-moving or stale tasks.
-
-### Status
-Each item in `Morning Start Up` and `TODO` has a `Status`, which appears as the
-last element of the line. In its most basic form, a `Status` is just a status
-name inside square brackets. A status name is a series of capitalized letters.
-A basic status might be `[IN PROGRESS]`.
-
-Each status also has a comment field, and a date. Comments are optional, but
-`today` will apply a date to any `Status` that doesn't already have one.
-
-Comments come after the status name, separated by space and a hyphen, and can
-be any string of text: `[IN PROGRESS - Working on pr #12]`.
-
-Dates follow the status name and the comment if one is present, again separated
-by space and hyphen. Dates must follow the format (given in Go's
-[`time.Format`](https://golang.org/pkg/time/#Time.Format) notation) `Jan _2,
-2006` or they will be considered part of the comment. Both of these are valid
-statuses with dates:
-```
-[IN PROGRESS - Working on pr #12 - Jan 16, 2020]
-[READY - Jan 14, 2020]
+### <a name="TaskList.Update">func</a> (\*TaskList) [Update](https://github.com/knusbaum/today/blob/master/task_list.go#L59)
+```go
+func (t *TaskList) Update(log *Lines)
 ```
 
-## Use 
-Today operates in the directory `~/today`, or the directory specified with the
-`-d` option.
+Update adds dates and statuses to any todos without them. If log is not nil, it will add entries
+to the log whenever it adds a date to a task's status.
 
-When `today` is run, it looks for a file named with the current day's date in
-the operating directory. If it does not find one, it attempts to generate one
-from the most recent previous file, determined by the date in the file name.
-(See [Generation](#generation))
+### <a name="TaskList.Write">func</a> (\*TaskList) [Write](https://github.com/knusbaum/today/blob/master/writer.go#L100)
+```go
+func (t *TaskList) Write(w *bufio.Writer) error
+```
 
+## <a name="Today">type</a> [Today](https://github.com/knusbaum/today/blob/master/today.go#L46)
+```go
+type Today struct {
+    Startup List
+    Notes   Lines
+    Log     Lines
+    Tasks   TaskList
+}
+```
 
-If doing [Generation](#generation), or when passed the `-c` flag, `today` will
-clear `"DONE"` tasks and `Morning Start Up` statuses.
+Today represents a today file. A today file contains 4 sections in this order:
 
-By default, `today` will update the statuses of the TODO section, and then sort
-the tasks.
+```
+1. Startup ("Morning Start Up")
+2. Notes ("Notes")
+3. Log ("Log")
+4. Tasks ("TODO")
+```
 
-With the `-i` flag, `today` will read from stdin and write to stdout rather
-than looking in any directory.
+Each section behaves slightly differently.
 
+### Startup
+The "Startup" section contains a list of items that are meant to be undertaken daily,
+beginning the day. For instance, a morning start up may contain:
 
+```
+1. Catch up on slack
+2. Check the calendar
+3. Read the inbox
+4. look at issue tracker
+```
 
-### Generation
-Generation is simply the process of using a previous day's today file to
-generate a today file for the current day. With no flags, `today` will first
-look for a today file for the current day. If one is not present, it will
-attempt to generate one from the most recent previous today file. If none is
-present, it will generate an empty today file for the current day.
+### Notes
+The "Notes" section is a simple sequence of lines that carries over from day to day. It is not
+emptied by a call to Clear(). Whitespace is eliminated (which may be changed in the future) but
+no other transformations apply. This is where I dump random notes, shell commands, etc. that I
+use frequently or want to remember. The whitespace elimination is to try to force notes to be
+short (single lines). For longer notes, I add the filename of a note file instead.
 
-Currently, when generating a today file from an existing previous today file,
-`today` clears out tasks with `"DONE"` status, clears the `Log` section, and
-removes statuses from the `Morning Start Up` section.
+### Log
+The "Log" section is a sequence of lines similar to "Notes", but this one is cleared by a call
+to Clear(). Every time Update() applies a Status to a task in the "Tasks" section, a line is
+added to the "Log" section with a timestamp and a description of the applied status. For
+example, when Update() notices a task with a new status without a date (e.g. "TASK-123 - Do
+something important [DONE - Finished up]"), It Makes an entry in the log like so:
+
+```
+4:48 - Moved TASK-123 (Do something important) to DONE (Finished up)
+```
+
+I also add my own timestamped entries to the Log when I want to record some important event.
+
+### Tasks
+The "Tasks" section is the most complicated section. It is a sequence of tasks that have
+Statuses and optional comments. See TaskList for details.
+
+### <a name="Parse">func</a> [Parse](https://github.com/knusbaum/today/blob/master/parser.go#L301)
+```go
+func Parse(r io.Reader) (*Today, error)
+```
+
+Parse attempts to parse a *Today, from r. It returns an error if a *Today
+could not be parsed.
+
+### <a name="Today.Clear">func</a> (\*Today) [Clear](https://github.com/knusbaum/today/blob/master/today.go#L131)
+```go
+func (t *Today) Clear()
+```
+
+Clear clears statuses from the Startup section, and eliminates "DONE" tasks from the Tasks
+section. (See TaskList.Clear)
+
+### <a name="Today.Sort">func</a> (\*Today) [Sort](https://github.com/knusbaum/today/blob/master/today.go#L125)
+```go
+func (t *Today) Sort()
+```
+
+Sort sorts the Tasks section (See Tasks.Sort)
+
+### <a name="Today.Update">func</a> (\*Today) [Update](https://github.com/knusbaum/today/blob/master/today.go#L119)
+```go
+func (t *Today) Update()
+```
+
+Update makes sure items in Startup are numbered correctly, and applies statuses to un-statused
+items in the Tasks section. (See TaskList.Update and List.Update)
+
+### <a name="Today.Write">func</a> (\*Today) [Write](https://github.com/knusbaum/today/blob/master/writer.go#L111)
+```go
+func (t *Today) Write(w io.Writer) error
+```
+
+Write writes a Today out to writer w in the normal form
+
+- - -
+Created: 24-Jul-2020 14:49:45 +0000
+Generated by [godoc2md](http://github.com/thatgerber/godoc2md)

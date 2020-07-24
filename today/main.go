@@ -125,7 +125,7 @@ func generateToday(dir string) error {
 	}
 	defer f.Close()
 
-	t, err := today.NewParser(f).Parse()
+	t, err := today.Parse(f)
 	if err != nil {
 		log.Fatalf("Failed to parse today: %s", err)
 	}
@@ -183,7 +183,7 @@ func main() {
 		}
 	}
 
-	t, err := today.NewParser(in).Parse()
+	t, err := today.Parse(in)
 	if err != nil {
 		log.Fatalf("Failed to parse today: %s", err)
 	}

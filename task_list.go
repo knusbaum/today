@@ -8,7 +8,7 @@ import (
 
 // TaskList represents a list of Tasks.
 type TaskList struct {
-	tasks      []*Task
+	Tasks      []*Task
 	nextTaskID int
 }
 
@@ -57,7 +57,7 @@ type Task struct {
 // Update adds dates and statuses to any todos without them. If log is not nil, it will add entries
 // to the log whenever it adds a date to a task's status.
 func (t *TaskList) Update(log *Lines) {
-	for _, todo := range t.tasks {
+	for _, todo := range t.Tasks {
 		if todo.Name == "" {
 			todo.Name = fmt.Sprintf("TASK-%d", t.nextTaskID)
 			t.nextTaskID++
@@ -117,23 +117,23 @@ func (t *TaskList) Update(log *Lines) {
 // "DONE" tasks are last. They should include the final status for the task, and are put at the
 // bottom to keep a record of how and when a task was completed. They are cleared by Clear()
 func (t *TaskList) Sort() {
-	if len(t.tasks) == 0 {
+	if len(t.Tasks) == 0 {
 		return
 	}
-	sort.Stable(byPriority(t.tasks))
+	sort.Stable(byPriority(t.Tasks))
 }
 
 // Clear removes all items with Status.Name == "DONE" from the TaskList
 func (t *TaskList) Clear() {
 	k := 0
-	for i := 0; i < len(t.tasks); {
-		if t.tasks[i].Status.Name != "DONE" {
-			t.tasks[k] = t.tasks[i]
+	for i := 0; i < len(t.Tasks); {
+		if t.Tasks[i].Status.Name != "DONE" {
+			t.Tasks[k] = t.Tasks[i]
 			k++
 		}
 		i++
 	}
-	t.tasks = t.tasks[:k]
+	t.Tasks = t.Tasks[:k]
 }
 
 var priorityOrder map[string]int = map[string]int{

@@ -98,7 +98,7 @@ func writeListItem(item *ListItem, w *bufio.Writer) error {
 }
 
 func (t *TaskList) Write(w *bufio.Writer) error {
-	for _, todo := range t.tasks {
+	for _, todo := range t.Tasks {
 		err := writeTodo(todo, w)
 		if err != nil {
 			return err

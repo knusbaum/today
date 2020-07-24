@@ -4,16 +4,15 @@ import (
 	"time"
 )
 
-// Today represents a today file. A today file contains several
-// sections to help track tasks.
-//
-// A today file contains 4 sections in this order:
+// Today represents a today file. A today file contains 4 sections in this order:
 //   1. Startup ("Morning Start Up")
 //   2. Notes ("Notes")
 //   3. Log ("Log")
 //   4. Tasks ("TODO")
 //
 // Each section behaves slightly differently.
+//
+// Startup
 //
 // The "Startup" section contains a list of items that are meant to be undertaken daily,
 // beginning the day. For instance, a morning start up may contain:
@@ -22,11 +21,15 @@ import (
 //   3. Read the inbox
 //   4. look at issue tracker
 //
+// Notes
+//
 // The "Notes" section is a simple sequence of lines that carries over from day to day. It is not
 // emptied by a call to Clear(). Whitespace is eliminated (which may be changed in the future) but
 // no other transformations apply. This is where I dump random notes, shell commands, etc. that I
 // use frequently or want to remember. The whitespace elimination is to try to force notes to be
 // short (single lines). For longer notes, I add the filename of a note file instead.
+//
+// Log
 //
 // The "Log" section is a sequence of lines similar to "Notes", but this one is cleared by a call
 // to Clear(). Every time Update() applies a Status to a task in the "Tasks" section, a line is
@@ -35,6 +38,8 @@ import (
 // something important [DONE - Finished up]"), It Makes an entry in the log like so:
 //   4:48 - Moved TASK-123 (Do something important) to DONE (Finished up)
 // I also add my own timestamped entries to the Log when I want to record some important event.
+//
+// Tasks
 //
 // The "Tasks" section is the most complicated section. It is a sequence of tasks that have
 // Statuses and optional comments. See TaskList for details.
@@ -122,7 +127,7 @@ func (t *Today) Sort() {
 }
 
 // Clear clears statuses from the Startup section, and eliminates "DONE" tasks from the Tasks
-// section. (See Tasks.Clear)
+// section. (See TaskList.Clear)
 func (t *Today) Clear() {
 	t.Tasks.Clear()
 

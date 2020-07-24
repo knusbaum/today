@@ -54,7 +54,7 @@ TODO:
 				"9:15 Starting on Jira task",
 			},
 			Tasks: TaskList{
-				tasks: []*Task{
+				Tasks: []*Task{
 					&Task{
 						Name:        "SOMEJIRA-123",
 						Description: "description of a todo task",
@@ -122,7 +122,7 @@ func TestReadback(t *testing.T) {
 			"9:15 Starting on Jira task",
 		},
 		Tasks: TaskList{
-			tasks: []*Task{
+			Tasks: []*Task{
 				&Task{
 					Name:        "SOMEJIRA-123",
 					Description: "description of a todo task",
@@ -147,8 +147,7 @@ func TestReadback(t *testing.T) {
 	today.Write(w)
 
 	r := strings.NewReader(b.String())
-	p := NewParser(r)
-	newToday, err := p.Parse()
+	newToday, err := Parse(r)
 
 	assert.NoError(t, err)
 	if !assert.NotNil(t, newToday) {
