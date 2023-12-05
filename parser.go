@@ -206,6 +206,20 @@ func (p *parser) parseLines(nextSection string) []string {
 	}
 }
 
+func (p *parser) parseLinesKeepWhitespace(nextSection string) []string {
+	var lines []string
+	for {
+		l, err := p.peekLine()
+		if err != nil || matchLine(l, nextSection) {
+			return lines
+		}
+		p.nextLine()
+		//if strings.TrimSpace(l) != "" {
+		lines = append(lines, l)
+		//}
+	}
+}
+
 func (p *parser) parseStartup() ([]*ListItem, error) {
 	for {
 		l, err := p.nextLine()
@@ -226,7 +240,7 @@ func (p *parser) parseNotes() ([]string, error) {
 			return nil, err
 		}
 		if matchLine(l, notesLine) {
-			return p.parseLines(logLine), nil
+			return p.parseLinesKeepWhitespace(logLine), nil
 		}
 	}
 }

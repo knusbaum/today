@@ -138,7 +138,7 @@ func (t *Today) Write(w io.Writer) error {
 		}
 	}
 
-	_, err = wtr.WriteString("\n" + logLine + "\n")
+	_, err = wtr.WriteString(logLine + "\n")
 	if err != nil {
 		return err
 	}
